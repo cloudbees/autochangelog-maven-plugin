@@ -25,6 +25,13 @@ News and Website
 
 All about the AutoChangeLog Maven Plugin can be found on the plugin's [website].
 
+Trademarks
+----------
+
+CloudBees and the CloudBees logo are trademarks of CloudBees, Inc.
+
+Apache, Apache Maven, Maven and the Apache feather logo are trademarks of The Apache Software Foundation.
+
 [CloudBeesLogo]: http://www.cloudbees.com/sites/all/themes/custom/cloudbees_zen/logo-color.png
 [website]: http://cloudbees.github.com/autochangelog-maven-plugin/
 [Apache License]: http://www.apache.org/licenses/LICENSE-2.0

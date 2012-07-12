@@ -19,7 +19,7 @@
     <meta name="Date-Revision-yyyymmdd" content="20120712" />
     <meta http-equiv="Content-Language" content="en" />
             </head>
-        <body class="topBarDisabled">
+        <body class="topBarEnabled">
           
     
     
@@ -32,10 +32,42 @@
         alt="Fork me on GitHub">
     </a>
   
-                
+                        
                     
+        <div id="topbar" class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+                <div class="container">
+                
+                              <div class="nav-collapse">
+            <ul class="nav">
+                          <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Overview <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+                  <li>      <a href="index.html"  title="Introduction">Introduction</a>
+</li>
+                  <li>      <a href="plugin-info.html"  title="Goals">Goals</a>
+</li>
+                </ul>
+      </li>
+                <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Project Documentation <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+                  <li>      <a href="project-info.html"  title="Project Information">Project Information</a>
+</li>
+                  <li>      <a href="project-reports.html"  title="Project Reports">Project Reports</a>
+</li>
+                </ul>
+      </li>
+                  </ul>
+          </div>
+          
+          
+                                                              
+                           </div>
+      </div>
+    </div>
     
-        <div class="container-fluid">
+        <div class="container">
           <div id="banner">
         <div class="pull-left">
                                     <a href="http://www.cloudbees.com/" id="bannerLeft">
@@ -64,69 +96,8 @@
                             </ul>
       </div>
 
-            <div class="row-fluid">
-        <div id="leftColumn" class="span2">
-          <div class="well sidebar-nav">
-                
-                    
-                                    <h3>Overview</h3>
-                  <ul>
-                  <li class="none">
-                          <a href="index.html" title="Introduction">Introduction</a>
-            </li>
-                  <li class="none">
-                          <a href="plugin-info.html" title="Goals">Goals</a>
-            </li>
-          </ul>
-                        <h3>Project Documentation</h3>
-                  <ul>
-                                                                                                                                                                                          <li class="expanded">
-                          <a href="project-info.html" title="Project Information">Project Information</a>
-                    <ul>
-                      <li class="none">
-                          <a href="dependencies.html" title="Dependencies">Dependencies</a>
-            </li>
-                      <li class="none">
-                          <a href="issue-tracking.html" title="Issue Tracking">Issue Tracking</a>
-            </li>
-                      <li class="none">
-                          <a href="mail-lists.html" title="Mailing Lists">Mailing Lists</a>
-            </li>
-                      <li class="none">
-            <strong>Project License</strong>
-          </li>
-                      <li class="none">
-                          <a href="team-list.html" title="Project Team">Project Team</a>
-            </li>
-                      <li class="none">
-                          <a href="project-summary.html" title="Project Summary">Project Summary</a>
-            </li>
-                      <li class="none">
-                          <a href="source-repository.html" title="Source Repository">Source Repository</a>
-            </li>
-              </ul>
-        </li>
-                                                                                                                          <li class="collapsed">
-                          <a href="project-reports.html" title="Project Reports">Project Reports</a>
-                  </li>
-          </ul>
-                      
-                    
-                
-          <hr class="divider" />
-
-           <div id="poweredBy">
-                            <div class="clear"></div>
-                            <div class="clear"></div>
-                            <div class="clear"></div>
-                                                                                                                         <a href="http://maven.apache.org/" title="Built by Maven" class="poweredBy">
-        <img class="poweredBy"  alt="Built by Maven" src="images/logos/maven-feather.png"    />
-      </a>
-                      </div>
-          </div>
-        </div>
-        
-        <div id="bodyColumn"  class="span10" >
+      
+        <div id="bodyColumn" >
                       <div class="section"><h2>Overview<a name="Overview"></a></h2><a name="Overview"></a><p>Typically the licenses listed for the project are that of the project itself, and not of dependencies.</p></div><div class="section"><h2>Project License<a name="Project_License"></a></h2><a name="Project_License"></a><div class="section"><h3>The Apache Software License, Version 2.0<a name="The_Apache_Software_License_Version_2.0"></a></h3><a name="The_Apache_Software_License_Version_2.0"></a><div class="source"><pre>
                                  Apache License
                            Version 2.0, January 2004
@@ -331,18 +302,22 @@
    limitations under the License.
 </pre></div></div></div>
                   </div>
-            </div>
       
     <hr/>
 
     <footer>
-            <div class="container-fluid">
+            <div class="container">
               <div class="row span12">Copyright &copy;                   2011-2012.
           All Rights Reserved.      
                     
       </div>
 
         
+                <p id="poweredBy" class="pull-right">
+                                                                                                                      <a href="http://maven.apache.org/" title="Built by Maven" class="poweredBy">
+        <img class="poweredBy"  alt="Built by Maven" src="images/logos/maven-feather.png"    />
+      </a>
+                  </p>
         
                 </div>
     </footer>

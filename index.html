@@ -21,7 +21,7 @@
     <meta name="Date-Revision-yyyymmdd" content="20120712" />
     <meta http-equiv="Content-Language" content="en" />
             </head>
-        <body class="topBarDisabled">
+        <body class="topBarEnabled">
           
     
     
@@ -34,10 +34,42 @@
         alt="Fork me on GitHub">
     </a>
   
-                
+                        
                     
+        <div id="topbar" class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+                <div class="container">
+                
+                              <div class="nav-collapse">
+            <ul class="nav">
+                          <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Overview <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+                  <li>      <a href="index.html"  title="Introduction">Introduction</a>
+</li>
+                  <li>      <a href="plugin-info.html"  title="Goals">Goals</a>
+</li>
+                </ul>
+      </li>
+                <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Project Documentation <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+                  <li>      <a href="project-info.html"  title="Project Information">Project Information</a>
+</li>
+                  <li>      <a href="project-reports.html"  title="Project Reports">Project Reports</a>
+</li>
+                </ul>
+      </li>
+                  </ul>
+          </div>
+          
+          
+                                                              
+                           </div>
+      </div>
+    </div>
     
-        <div class="container-fluid">
+        <div class="container">
           <div id="banner">
         <div class="pull-left">
                                     <a href="http://www.cloudbees.com/" id="bannerLeft">
@@ -66,61 +98,27 @@
                             </ul>
       </div>
 
-            <div class="row-fluid">
-        <div id="leftColumn" class="span2">
-          <div class="well sidebar-nav">
-                
-                    
-                                    <h3>Overview</h3>
-                  <ul>
-                  <li class="none">
-            <strong>Introduction</strong>
-          </li>
-                  <li class="none">
-                          <a href="plugin-info.html" title="Goals">Goals</a>
-            </li>
-          </ul>
-                        <h3>Project Documentation</h3>
-                  <ul>
-                                                                                                                                                                                <li class="collapsed">
-                          <a href="project-info.html" title="Project Information">Project Information</a>
-                  </li>
-                                                                                                                          <li class="collapsed">
-                          <a href="project-reports.html" title="Project Reports">Project Reports</a>
-                  </li>
-          </ul>
-                      
-                    
-                
-          <hr class="divider" />
-
-           <div id="poweredBy">
-                            <div class="clear"></div>
-                            <div class="clear"></div>
-                            <div class="clear"></div>
-                                                                                                                         <a href="http://maven.apache.org/" title="Built by Maven" class="poweredBy">
-        <img class="poweredBy"  alt="Built by Maven" src="images/logos/maven-feather.png"    />
-      </a>
-                      </div>
-          </div>
-        </div>
-        
-        <div id="bodyColumn"  class="span10" >
+      
+        <div id="bodyColumn" >
                                   
             <!-- Copyright 2012, CloudBees Inc. --><!--  --><!-- Licensed under the Apache License, Version 2.0 (the "License"); --><!-- you may not use this file except in compliance with the License. --><!-- You may obtain a copy of the License at --><!--  --><!-- http://www.apache.org/licenses/LICENSE-2.0 --><!--  --><!-- Unless required by applicable law or agreed to in writing, software --><!-- distributed under the License is distributed on an "AS IS" BASIS, --><!-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. --><!-- See the License for the specific language governing permissions and --><!-- limitations under the License. --><div class="section"><h2>Autochangelog Maven Plugin<a name="Autochangelog_Maven_Plugin"></a></h2><p>CloudBees' Autochangelog Maven plugin is used when you want to capture the significant changes since the most recent release of a project.</p><div class="section"><h3>Goals Overview<a name="Goals_Overview"></a></h3><p>The Autochangelog Maven Plugin has the following goals.</p><ul><li><a href="./attach-mojo.html">autochangelog:attach</a> Captures and attaches the <tt>changes.json</tt>.</li></ul></div><div class="section"><h3>Trademarks<a name="Trademarks"></a></h3><p>CloudBees and the CloudBees logo are trademarks of CloudBees, Inc.</p><p>Apache, Apache Maven, Maven and the Apache feather logo are trademarks of The Apache Software Foundation.</p></div></div>
                   </div>
-            </div>
       
     <hr/>
 
     <footer>
-            <div class="container-fluid">
+            <div class="container">
               <div class="row span12">Copyright &copy;                   2011-2012.
           All Rights Reserved.      
                     
       </div>
 
         
+                <p id="poweredBy" class="pull-right">
+                                                                                                                      <a href="http://maven.apache.org/" title="Built by Maven" class="poweredBy">
+        <img class="poweredBy"  alt="Built by Maven" src="images/logos/maven-feather.png"    />
+      </a>
+                  </p>
         
                 </div>
     </footer>

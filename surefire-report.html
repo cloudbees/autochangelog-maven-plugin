@@ -19,7 +19,7 @@
     <meta name="Date-Revision-yyyymmdd" content="20120712" />
     <meta http-equiv="Content-Language" content="en" />
             </head>
-        <body class="topBarDisabled">
+        <body class="topBarEnabled">
           
     
     
@@ -32,10 +32,42 @@
         alt="Fork me on GitHub">
     </a>
   
-                
+                        
                     
+        <div id="topbar" class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+                <div class="container">
+                
+                              <div class="nav-collapse">
+            <ul class="nav">
+                          <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Overview <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+                  <li>      <a href="index.html"  title="Introduction">Introduction</a>
+</li>
+                  <li>      <a href="plugin-info.html"  title="Goals">Goals</a>
+</li>
+                </ul>
+      </li>
+                <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Project Documentation <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+                  <li>      <a href="project-info.html"  title="Project Information">Project Information</a>
+</li>
+                  <li>      <a href="project-reports.html"  title="Project Reports">Project Reports</a>
+</li>
+                </ul>
+      </li>
+                  </ul>
+          </div>
+          
+          
+                                                              
+                           </div>
+      </div>
+    </div>
     
-        <div class="container-fluid">
+        <div class="container">
           <div id="banner">
         <div class="pull-left">
                                     <a href="http://www.cloudbees.com/" id="bannerLeft">
@@ -64,60 +96,8 @@
                             </ul>
       </div>
 
-            <div class="row-fluid">
-        <div id="leftColumn" class="span2">
-          <div class="well sidebar-nav">
-                
-                    
-                                    <h3>Overview</h3>
-                  <ul>
-                  <li class="none">
-                          <a href="index.html" title="Introduction">Introduction</a>
-            </li>
-                  <li class="none">
-                          <a href="plugin-info.html" title="Goals">Goals</a>
-            </li>
-          </ul>
-                        <h3>Project Documentation</h3>
-                  <ul>
-                                                                                                                                                                                <li class="collapsed">
-                          <a href="project-info.html" title="Project Information">Project Information</a>
-                  </li>
-                                                                                                                                    <li class="expanded">
-                          <a href="project-reports.html" title="Project Reports">Project Reports</a>
-                    <ul>
-                      <li class="none">
-                          <a href="apidocs/index.html" title="JavaDocs">JavaDocs</a>
-            </li>
-                      <li class="none">
-                          <a href="xref/index.html" title="Source Xref">Source Xref</a>
-            </li>
-                      <li class="none">
-            <strong>Surefire Report</strong>
-          </li>
-                      <li class="none">
-                          <a href="plugin-info.html" title="Plugin Documentation">Plugin Documentation</a>
-            </li>
-              </ul>
-        </li>
-          </ul>
-                      
-                    
-                
-          <hr class="divider" />
-
-           <div id="poweredBy">
-                            <div class="clear"></div>
-                            <div class="clear"></div>
-                            <div class="clear"></div>
-                                                                                                                         <a href="http://maven.apache.org/" title="Built by Maven" class="poweredBy">
-        <img class="poweredBy"  alt="Built by Maven" src="images/logos/maven-feather.png"    />
-      </a>
-                      </div>
-          </div>
-        </div>
-        
-        <div id="bodyColumn"  class="span10" >
+      
+        <div id="bodyColumn" >
                                   
             <script type="text/javascript">
 //<![CDATA[
@@ -137,18 +117,22 @@ function toggleDisplay(elementId) {
 //]]>
 </script><div class="section"><h2>Surefire Report<a name="Surefire_Report"></a></h2></div><div class="section"><h2>Summary<a name="Summary"></a></h2><a name="Summary"></a><br /><table border="0" class="table table-striped"><tr class="a"><th>Tests</th><th>Errors </th><th>Failures</th><th>Skipped</th><th>Success Rate</th><th>Time</th></tr><tr class="b"><td>0</td><td>0</td><td>0</td><td>0</td><td>0%</td><td>0</td></tr></table><br /><p>Note: failures are anticipated and checked for with assertions while errors are unanticipated.</p><br /></div>
                   </div>
-            </div>
       
     <hr/>
 
     <footer>
-            <div class="container-fluid">
+            <div class="container">
               <div class="row span12">Copyright &copy;                   2011-2012.
           All Rights Reserved.      
                     
       </div>
 
         
+                <p id="poweredBy" class="pull-right">
+                                                                                                                      <a href="http://maven.apache.org/" title="Built by Maven" class="poweredBy">
+        <img class="poweredBy"  alt="Built by Maven" src="images/logos/maven-feather.png"    />
+      </a>
+                  </p>
         
                 </div>
     </footer>

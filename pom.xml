@@ -26,7 +26,7 @@
 
   <groupId>com.cloudbees.maven.plugins</groupId>
   <artifactId>autochangelog-maven-plugin</artifactId>
-  <version>1.0-alpha-2-SNAPSHOT</version>
+  <version>1.0-alpha-2</version>
   <packaging>maven-plugin</packaging>
 
   <name>Automatic Changelog Maven Plugin</name>

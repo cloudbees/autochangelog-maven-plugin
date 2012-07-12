@@ -1,0 +1,38 @@
+ ~~ Copyright 2012, CloudBees Inc.
+ ~~
+ ~~ Licensed under the Apache License, Version 2.0 (the "License");
+ ~~ you may not use this file except in compliance with the License.
+ ~~ You may obtain a copy of the License at
+ ~~
+ ~~     http://www.apache.org/licenses/LICENSE-2.0
+ ~~
+ ~~ Unless required by applicable law or agreed to in writing, software
+ ~~ distributed under the License is distributed on an "AS IS" BASIS,
+ ~~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ ~~ See the License for the specific language governing permissions and
+ ~~ limitations under the License.
+
+
+ ------
+ Introduction
+ ------
+ Stephen Connolly
+ ------
+ 2012-06-27
+ ------
+
+
+Autochangelog Maven Plugin
+
+  CloudBees' Autochangelog Maven plugin is used when you want to capture the significant changes since the most recent
+  release of a project.
+
+* Goals Overview
+
+  The Autochangelog Maven Plugin has the following goals.
+
+  * {{{./attach-mojo.html}autochangelog:attach}} Captures and attaches the <<<changes.json>>>.
+
+* Trademarks
+
+  Apache, Apache Maven, Maven and the Apache feather logo are trademarks of The Apache Software Foundation.

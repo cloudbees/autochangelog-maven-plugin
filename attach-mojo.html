@@ -93,7 +93,7 @@
                 
                     
                   <li id="publishDate" class="pull-right">Last Published: 2012-07-12</li> <li class="divider pull-right">|</li>
-              <li id="projectVersion" class="pull-right">Version: 1.0-alpha-1</li>
+              <li id="projectVersion" class="pull-right">Version: 1.0-alpha-2</li>
             
                             </ul>
       </div>
@@ -105,7 +105,7 @@
   
     <div class="section"><h2>autochangelog:attach<a name="autochangelog:attach"></a></h2>
       <p><b>Full name</b>:</p>
-      <p>com.cloudbees.maven.plugins:autochangelog-maven-plugin:1.0-alpha-1:attach</p>
+      <p>com.cloudbees.maven.plugins:autochangelog-maven-plugin:1.0-alpha-2:attach</p>
       <p><b>Description</b>:</p>
       <div>Attaches a changelog .json as a secondary artifact to the build.</div>
       <p><b>Attributes</b>:</p>
@@ -115,6 +115,7 @@
         <li>Requires dependency resolution of artifacts in scope: <tt>runtime</tt>.</li>
         <li>Requires dependency collection of artifacts in scope: <tt>runtime</tt>.</li>
         <li>The goal is thread-safe and supports parallel builds.</li>
+        <li>Binds by default to the <a class="externalLink" href="http://maven.apache.org/ref/current/maven-core/lifecycles.html">lifecycle phase</a>: <tt>package</tt>.</li>
       </ul>
       <div class="section"><h3>Required Parameters<a name="Required_Parameters"></a></h3>
         <table class="table table-striped" border="0">
@@ -179,12 +180,18 @@ connecting to the scm. Can either be &quot;connection&quot; or
             <td>The private key (used by java svn).<br /><b>User property is</b>: <tt>privateKey</tt>.</td>
           </tr>
           <tr class="b">
+            <td><b><a href="#skip">skip</a></b></td>
+            <td><tt>boolean</tt></td>
+            <td><tt>-</tt></td>
+            <td>Whether to skip to automatic changelog or not.<br /><b>Default value is</b>: <tt>false</tt>.<br /><b>User property is</b>: <tt>autochangelog.skip</tt>.</td>
+          </tr>
+          <tr class="a">
             <td><b><a href="#tagBase">tagBase</a></b></td>
             <td><tt>String</tt></td>
             <td><tt>-</tt></td>
             <td>The url of tags base directory (used by svn protocol).<br /><b>User property is</b>: <tt>tagBase</tt>.</td>
           </tr>
-          <tr class="a">
+          <tr class="b">
             <td><b><a href="#username">username</a></b></td>
             <td><tt>String</tt></td>
             <td><tt>-</tt></td>
@@ -237,6 +244,13 @@ connecting to the scm. Can either be &quot;connection&quot; or
           <li><b>Type</b>: <tt>java.lang.String</tt></li>
           <li><b>Required</b>: <tt>No</tt></li>
           <li><b>User Property</b>: <tt>privateKey</tt></li>
+        </ul><hr /><p><b><a name="skip">skip</a>:</b></p>
+        <div>Whether to skip to automatic changelog or not.</div>
+        <ul>
+          <li><b>Type</b>: <tt>boolean</tt></li>
+          <li><b>Required</b>: <tt>No</tt></li>
+          <li><b>User Property</b>: <tt>autochangelog.skip</tt></li>
+          <li><b>Default</b>: <tt>false</tt></li>
         </ul><hr /><p><b><a name="tagBase">tagBase</a>:</b></p>
         <div>The url of tags base directory (used by svn protocol).</div>
         <ul>

@@ -22,6 +22,7 @@ import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.DefaultProjectBuildingRequest;
@@ -71,10 +72,16 @@ import java.util.regex.Pattern;
 /**
  * Attaches a changelog .json as a secondary artifact to the build.
  */
-@Mojo(name = "attach", aggregator = true, threadSafe = true)
+@Mojo(name = "attach", aggregator = true, threadSafe = true, defaultPhase = LifecyclePhase.PACKAGE)
 public class AttachMojo extends AbstractMojo {
 
     private static final Pattern SNAPSHOT_PATTERN = Pattern.compile("(-((\\d{8}\\.\\d{6})-(\\d+))|(SNAPSHOT))$");
+
+    /**
+     * Whether to skip to automatic changelog or not.
+     */
+    @Parameter(property = "autochangelog.skip", defaultValue = "false")
+    private boolean skip;
 
     /**
      * The user name (used by svn and starteam protocol).
@@ -161,6 +168,10 @@ public class AttachMojo extends AbstractMojo {
     private String connection = null;
 
     public void execute() throws MojoExecutionException, MojoFailureException {
+        if (skip) {
+            getLog().info("Execution is skipped.");
+            return;
+        }
         getLog().debug("Looking for previous release of " + project.getGroupId() + ":" + project.getArtifactId() + ":"
                 + project.getVersion());
         Artifact projectArtifact = artifactFactory

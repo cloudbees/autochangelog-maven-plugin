@@ -34,7 +34,7 @@
   <skin>
     <groupId>org.apache.maven.skins</groupId>
     <artifactId>maven-fluido-skin</artifactId>
-    <version>1.1</version>
+    <version>1.2.2</version>
   </skin>
 
   <body>
@@ -58,8 +58,10 @@
       <gitHub>
         <projectId>cloudbees/autochangelog-maven-plugin</projectId>
         <ribbonOrientation>right</ribbonOrientation>
-        <ribbonColor>black</ribbonColor>
+        <ribbonColor>blue</ribbonColor>
       </gitHub>
+      <topBarEnabled>true</topBarEnabled>
+      <sideBarEnabled>false</sideBarEnabled>
     </fluidoSkin>
   </custom>
 </project>

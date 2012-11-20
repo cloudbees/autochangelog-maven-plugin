@@ -147,6 +147,9 @@ public class AttachMojo extends AbstractMojo {
     @Parameter(property = "session", readonly = true, required = true)
     private MavenSession session;
 
+    @Parameter(property = "autochangelog.previousVersion", required = false)
+    private String previousVersion;
+
     @Component
     private ArtifactMetadataSource artifactMetadataSource;
 
@@ -172,6 +175,7 @@ public class AttachMojo extends AbstractMojo {
             getLog().info("Execution is skipped.");
             return;
         }
+        if (previousVersion == null) {
         getLog().debug("Looking for previous release of " + project.getGroupId() + ":" + project.getArtifactId() + ":"
                 + project.getVersion());
         Artifact projectArtifact = artifactFactory
@@ -195,6 +199,8 @@ public class AttachMojo extends AbstractMojo {
             throw new MojoExecutionException(e.getMessage(), e);
         }
         getLog().debug("Previous release = " + latest);
+            previousVersion = latest == null ? null : latest.toString();
+        }
 
         Map<GroupArtifactId, String> addedDeps = new LinkedHashMap<GroupArtifactId, String>();
         Map<GroupArtifactId, String> removedDeps = new LinkedHashMap<GroupArtifactId, String>();
@@ -207,9 +213,9 @@ public class AttachMojo extends AbstractMojo {
 
         String startTag = null;
         String endTag = null;
-        if (latest != null) {
+        if (previousVersion != null) {
             Artifact latestArtifact = artifactFactory
-                    .createProjectArtifact(project.getGroupId(), project.getArtifactId(), latest.toString());
+                    .createProjectArtifact(project.getGroupId(), project.getArtifactId(), previousVersion);
             try {
                 artifactResolver.resolve(latestArtifact, project.getRemoteArtifactRepositories(), localRepository);
             } catch (ArtifactResolutionException e) {
@@ -268,7 +274,7 @@ public class AttachMojo extends AbstractMojo {
             Properties values = new Properties();
             values.setProperty("artifactId", project.getArtifactId());
             values.setProperty("groupId", project.getGroupId());
-            values.setProperty("version", latest.toString());
+            values.setProperty("version", previousVersion);
             interpolator.addValueSource(new PrefixedPropertiesValueSource(possiblePrefixes, values, true));
             RecursionInterceptor recursionInterceptor = new PrefixAwareRecursionInterceptor(possiblePrefixes);
             try {

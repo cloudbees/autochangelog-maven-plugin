@@ -204,6 +204,7 @@ public class AttachMojo extends AbstractMojo {
 
         Map<GroupArtifactId, String> addedDeps = new LinkedHashMap<GroupArtifactId, String>();
         Map<GroupArtifactId, String> removedDeps = new LinkedHashMap<GroupArtifactId, String>();
+        Map<GroupArtifactId, String> unchangedDeps = new LinkedHashMap<GroupArtifactId, String>();
         Map<GroupArtifactId, Map.Entry<String, String>> updatedDeps =
                 new LinkedHashMap<GroupArtifactId, Map.Entry<String, String>>();
 
@@ -253,6 +254,8 @@ public class AttachMojo extends AbstractMojo {
                     addedDeps.remove(key);
                     if (!v.equals(dep.getVersion())) {
                         updatedDeps.put(key, new AbstractMap.SimpleImmutableEntry<String, String>(dep.getVersion(), v));
+                    } else {
+                        unchangedDeps.put(key, v);
                     }
                 } else if (updatedDeps.containsKey(key)) {
                     String v = updatedDeps.get(key).getValue();
@@ -357,8 +360,9 @@ public class AttachMojo extends AbstractMojo {
             generator.setPrettyPrinter(new DefaultPrettyPrinter());
             try {
                 generator.writeStartObject();
+                generator.writeStringField("previousVersion", previousVersion);
                 generator.writeFieldName("dependencies");
-                writeDependenciesDelta(addedDeps, removedDeps, updatedDeps, generator);
+                writeDependenciesDelta(addedDeps, removedDeps, updatedDeps, unchangedDeps, generator);
                 if (changeLog != null) {
                     generator.writeFieldName("scm");
                     writeChangeLog(generator, changeLog);
@@ -376,6 +380,7 @@ public class AttachMojo extends AbstractMojo {
     private void writeDependenciesDelta(Map<GroupArtifactId, String> addedDeps,
                                         Map<GroupArtifactId, String> removedDeps,
                                         Map<GroupArtifactId, Map.Entry<String, String>> updatedDeps,
+                                        Map<GroupArtifactId, String> unchangedDeps,
                                         JsonGenerator generator) throws IOException {
         generator.writeStartObject();
         if (!addedDeps.isEmpty()) {
@@ -408,6 +413,17 @@ public class AttachMojo extends AbstractMojo {
                 generator.writeStringField("artifactId", e.getKey().getArtifactId());
                 generator.writeStringField("version", e.getValue().getValue());
                 generator.writeStringField("originalVersion", e.getValue().getKey());
+                generator.writeEndObject();
+            }
+            generator.writeEndArray();
+        }
+        if (!unchangedDeps.isEmpty()) {
+            generator.writeArrayFieldStart("unchanged");
+            for (Map.Entry<GroupArtifactId, String> e : unchangedDeps.entrySet()) {
+                generator.writeStartObject();
+                generator.writeStringField("groupId", e.getKey().getGroupId());
+                generator.writeStringField("artifactId", e.getKey().getArtifactId());
+                generator.writeStringField("version", e.getValue());
                 generator.writeEndObject();
             }
             generator.writeEndArray();

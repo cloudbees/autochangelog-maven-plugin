@@ -26,7 +26,7 @@
 
   <groupId>com.cloudbees.maven.plugins</groupId>
   <artifactId>autochangelog-maven-plugin</artifactId>
-  <version>1.0-alpha-4-SNAPSHOT</version>
+  <version>1.0-alpha-3-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
 
   <name>Automatic Changelog Maven Plugin</name>
@@ -166,11 +166,11 @@
       <plugins>
         <plugin>
           <artifactId>maven-invoker-plugin</artifactId>
-          <version>1.5</version>
+          <version>1.8</version>
         </plugin>
         <plugin>
           <artifactId>maven-plugin-plugin</artifactId>
-          <version>3.0</version>
+          <version>3.2</version>
           <configuration>
             <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
           </configuration>
@@ -192,7 +192,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>mrm-maven-plugin</artifactId>
-          <version>1.0-alpha-1</version>
+          <version>1.0-beta-1</version>
           <configuration>
             <propertyName>repository.proxy.url</propertyName>
           </configuration>
@@ -202,7 +202,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-site-plugin</artifactId>
-        <version>3.1</version>
+        <version>3.3</version>
         <dependencies>
           <dependency>
             <groupId>com.github.stephenc.wagon</groupId>

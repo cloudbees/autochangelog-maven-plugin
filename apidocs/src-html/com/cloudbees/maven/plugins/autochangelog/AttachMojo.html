@@ -1,736 +1,763 @@
-<HTML>
-<BODY BGCOLOR="white">
-<PRE>
-<FONT color="green">001</FONT>    package com.cloudbees.maven.plugins.autochangelog;<a name="line.1"></a>
-<FONT color="green">002</FONT>    <a name="line.2"></a>
-<FONT color="green">003</FONT>    import com.fasterxml.jackson.core.JsonEncoding;<a name="line.3"></a>
-<FONT color="green">004</FONT>    import com.fasterxml.jackson.core.JsonFactory;<a name="line.4"></a>
-<FONT color="green">005</FONT>    import com.fasterxml.jackson.core.JsonGenerator;<a name="line.5"></a>
-<FONT color="green">006</FONT>    import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;<a name="line.6"></a>
-<FONT color="green">007</FONT>    import org.apache.maven.artifact.Artifact;<a name="line.7"></a>
-<FONT color="green">008</FONT>    import org.apache.maven.artifact.factory.ArtifactFactory;<a name="line.8"></a>
-<FONT color="green">009</FONT>    import org.apache.maven.artifact.metadata.ArtifactMetadataRetrievalException;<a name="line.9"></a>
-<FONT color="green">010</FONT>    import org.apache.maven.artifact.metadata.ArtifactMetadataSource;<a name="line.10"></a>
-<FONT color="green">011</FONT>    import org.apache.maven.artifact.repository.ArtifactRepository;<a name="line.11"></a>
-<FONT color="green">012</FONT>    import org.apache.maven.artifact.resolver.ArtifactNotFoundException;<a name="line.12"></a>
-<FONT color="green">013</FONT>    import org.apache.maven.artifact.resolver.ArtifactResolutionException;<a name="line.13"></a>
-<FONT color="green">014</FONT>    import org.apache.maven.artifact.resolver.ArtifactResolver;<a name="line.14"></a>
-<FONT color="green">015</FONT>    import org.apache.maven.artifact.versioning.ArtifactVersion;<a name="line.15"></a>
-<FONT color="green">016</FONT>    import org.apache.maven.artifact.versioning.DefaultArtifactVersion;<a name="line.16"></a>
-<FONT color="green">017</FONT>    import org.apache.maven.execution.MavenSession;<a name="line.17"></a>
-<FONT color="green">018</FONT>    import org.apache.maven.model.Dependency;<a name="line.18"></a>
-<FONT color="green">019</FONT>    import org.apache.maven.model.Plugin;<a name="line.19"></a>
-<FONT color="green">020</FONT>    import org.apache.maven.model.building.ModelBuildingRequest;<a name="line.20"></a>
-<FONT color="green">021</FONT>    import org.apache.maven.plugin.AbstractMojo;<a name="line.21"></a>
-<FONT color="green">022</FONT>    import org.apache.maven.plugin.MojoExecutionException;<a name="line.22"></a>
-<FONT color="green">023</FONT>    import org.apache.maven.plugin.MojoFailureException;<a name="line.23"></a>
-<FONT color="green">024</FONT>    import org.apache.maven.plugins.annotations.Component;<a name="line.24"></a>
-<FONT color="green">025</FONT>    import org.apache.maven.plugins.annotations.LifecyclePhase;<a name="line.25"></a>
-<FONT color="green">026</FONT>    import org.apache.maven.plugins.annotations.Mojo;<a name="line.26"></a>
-<FONT color="green">027</FONT>    import org.apache.maven.plugins.annotations.Parameter;<a name="line.27"></a>
-<FONT color="green">028</FONT>    import org.apache.maven.project.DefaultProjectBuildingRequest;<a name="line.28"></a>
-<FONT color="green">029</FONT>    import org.apache.maven.project.MavenProject;<a name="line.29"></a>
-<FONT color="green">030</FONT>    import org.apache.maven.project.MavenProjectHelper;<a name="line.30"></a>
-<FONT color="green">031</FONT>    import org.apache.maven.project.ProjectBuilder;<a name="line.31"></a>
-<FONT color="green">032</FONT>    import org.apache.maven.project.ProjectBuildingException;<a name="line.32"></a>
-<FONT color="green">033</FONT>    import org.apache.maven.project.ProjectBuildingRequest;<a name="line.33"></a>
-<FONT color="green">034</FONT>    import org.apache.maven.scm.ChangeFile;<a name="line.34"></a>
-<FONT color="green">035</FONT>    import org.apache.maven.scm.ChangeSet;<a name="line.35"></a>
-<FONT color="green">036</FONT>    import org.apache.maven.scm.ScmException;<a name="line.36"></a>
-<FONT color="green">037</FONT>    import org.apache.maven.scm.ScmFileSet;<a name="line.37"></a>
-<FONT color="green">038</FONT>    import org.apache.maven.scm.ScmResult;<a name="line.38"></a>
-<FONT color="green">039</FONT>    import org.apache.maven.scm.ScmTag;<a name="line.39"></a>
-<FONT color="green">040</FONT>    import org.apache.maven.scm.ScmVersion;<a name="line.40"></a>
-<FONT color="green">041</FONT>    import org.apache.maven.scm.command.changelog.ChangeLogScmResult;<a name="line.41"></a>
-<FONT color="green">042</FONT>    import org.apache.maven.scm.command.changelog.ChangeLogSet;<a name="line.42"></a>
-<FONT color="green">043</FONT>    import org.apache.maven.scm.manager.NoSuchScmProviderException;<a name="line.43"></a>
-<FONT color="green">044</FONT>    import org.apache.maven.scm.manager.ScmManager;<a name="line.44"></a>
-<FONT color="green">045</FONT>    import org.apache.maven.scm.provider.ScmProvider;<a name="line.45"></a>
-<FONT color="green">046</FONT>    import org.apache.maven.scm.provider.ScmProviderRepository;<a name="line.46"></a>
-<FONT color="green">047</FONT>    import org.apache.maven.scm.provider.ScmProviderRepositoryWithHost;<a name="line.47"></a>
-<FONT color="green">048</FONT>    import org.apache.maven.scm.provider.svn.repository.SvnScmProviderRepository;<a name="line.48"></a>
-<FONT color="green">049</FONT>    import org.apache.maven.scm.repository.ScmRepository;<a name="line.49"></a>
-<FONT color="green">050</FONT>    import org.apache.maven.settings.Server;<a name="line.50"></a>
-<FONT color="green">051</FONT>    import org.apache.maven.settings.Settings;<a name="line.51"></a>
-<FONT color="green">052</FONT>    import org.codehaus.plexus.interpolation.InterpolationException;<a name="line.52"></a>
-<FONT color="green">053</FONT>    import org.codehaus.plexus.interpolation.Interpolator;<a name="line.53"></a>
-<FONT color="green">054</FONT>    import org.codehaus.plexus.interpolation.PrefixAwareRecursionInterceptor;<a name="line.54"></a>
-<FONT color="green">055</FONT>    import org.codehaus.plexus.interpolation.PrefixedPropertiesValueSource;<a name="line.55"></a>
-<FONT color="green">056</FONT>    import org.codehaus.plexus.interpolation.RecursionInterceptor;<a name="line.56"></a>
-<FONT color="green">057</FONT>    import org.codehaus.plexus.interpolation.StringSearchInterpolator;<a name="line.57"></a>
-<FONT color="green">058</FONT>    import org.codehaus.plexus.util.StringUtils;<a name="line.58"></a>
-<FONT color="green">059</FONT>    import org.codehaus.plexus.util.xml.Xpp3Dom;<a name="line.59"></a>
-<FONT color="green">060</FONT>    <a name="line.60"></a>
-<FONT color="green">061</FONT>    import java.io.File;<a name="line.61"></a>
-<FONT color="green">062</FONT>    import java.io.IOException;<a name="line.62"></a>
-<FONT color="green">063</FONT>    import java.text.SimpleDateFormat;<a name="line.63"></a>
-<FONT color="green">064</FONT>    import java.util.AbstractMap;<a name="line.64"></a>
-<FONT color="green">065</FONT>    import java.util.LinkedHashMap;<a name="line.65"></a>
-<FONT color="green">066</FONT>    import java.util.List;<a name="line.66"></a>
-<FONT color="green">067</FONT>    import java.util.Map;<a name="line.67"></a>
-<FONT color="green">068</FONT>    import java.util.Properties;<a name="line.68"></a>
-<FONT color="green">069</FONT>    import java.util.TimeZone;<a name="line.69"></a>
-<FONT color="green">070</FONT>    import java.util.regex.Pattern;<a name="line.70"></a>
-<FONT color="green">071</FONT>    <a name="line.71"></a>
-<FONT color="green">072</FONT>    /**<a name="line.72"></a>
-<FONT color="green">073</FONT>     * Attaches a changelog .json as a secondary artifact to the build.<a name="line.73"></a>
-<FONT color="green">074</FONT>     */<a name="line.74"></a>
-<FONT color="green">075</FONT>    @Mojo(name = "attach", aggregator = true, threadSafe = true, defaultPhase = LifecyclePhase.PACKAGE)<a name="line.75"></a>
-<FONT color="green">076</FONT>    public class AttachMojo extends AbstractMojo {<a name="line.76"></a>
-<FONT color="green">077</FONT>    <a name="line.77"></a>
-<FONT color="green">078</FONT>        private static final Pattern SNAPSHOT_PATTERN = Pattern.compile("(-((\\d{8}\\.\\d{6})-(\\d+))|(SNAPSHOT))$");<a name="line.78"></a>
-<FONT color="green">079</FONT>    <a name="line.79"></a>
-<FONT color="green">080</FONT>        /**<a name="line.80"></a>
-<FONT color="green">081</FONT>         * Whether to skip to automatic changelog or not.<a name="line.81"></a>
-<FONT color="green">082</FONT>         */<a name="line.82"></a>
-<FONT color="green">083</FONT>        @Parameter(property = "autochangelog.skip", defaultValue = "false")<a name="line.83"></a>
-<FONT color="green">084</FONT>        private boolean skip;<a name="line.84"></a>
-<FONT color="green">085</FONT>    <a name="line.85"></a>
-<FONT color="green">086</FONT>        /**<a name="line.86"></a>
-<FONT color="green">087</FONT>         * The user name (used by svn and starteam protocol).<a name="line.87"></a>
-<FONT color="green">088</FONT>         */<a name="line.88"></a>
-<FONT color="green">089</FONT>        @Parameter(property = "username")<a name="line.89"></a>
-<FONT color="green">090</FONT>        private String username;<a name="line.90"></a>
-<FONT color="green">091</FONT>    <a name="line.91"></a>
-<FONT color="green">092</FONT>        /**<a name="line.92"></a>
-<FONT color="green">093</FONT>         * The user password (used by svn and starteam protocol).<a name="line.93"></a>
-<FONT color="green">094</FONT>         */<a name="line.94"></a>
-<FONT color="green">095</FONT>        @Parameter(property = "password")<a name="line.95"></a>
-<FONT color="green">096</FONT>        private String password;<a name="line.96"></a>
-<FONT color="green">097</FONT>    <a name="line.97"></a>
-<FONT color="green">098</FONT>        /**<a name="line.98"></a>
-<FONT color="green">099</FONT>         * The private key (used by java svn).<a name="line.99"></a>
-<FONT color="green">100</FONT>         */<a name="line.100"></a>
-<FONT color="green">101</FONT>        @Parameter(property = "privateKey")<a name="line.101"></a>
-<FONT color="green">102</FONT>        private String privateKey;<a name="line.102"></a>
-<FONT color="green">103</FONT>    <a name="line.103"></a>
-<FONT color="green">104</FONT>        /**<a name="line.104"></a>
-<FONT color="green">105</FONT>         * The passphrase (used by java svn).<a name="line.105"></a>
-<FONT color="green">106</FONT>         */<a name="line.106"></a>
-<FONT color="green">107</FONT>        @Parameter(property = "passphrase")<a name="line.107"></a>
-<FONT color="green">108</FONT>        private String passphrase;<a name="line.108"></a>
-<FONT color="green">109</FONT>    <a name="line.109"></a>
-<FONT color="green">110</FONT>        /**<a name="line.110"></a>
-<FONT color="green">111</FONT>         * The url of tags base directory (used by svn protocol).<a name="line.111"></a>
-<FONT color="green">112</FONT>         */<a name="line.112"></a>
-<FONT color="green">113</FONT>        @Parameter(property = "tagBase")<a name="line.113"></a>
-<FONT color="green">114</FONT>        private String tagBase;<a name="line.114"></a>
-<FONT color="green">115</FONT>    <a name="line.115"></a>
-<FONT color="green">116</FONT>        /**<a name="line.116"></a>
-<FONT color="green">117</FONT>         * Allows the user to choose which scm connection to use when connecting to the scm.<a name="line.117"></a>
-<FONT color="green">118</FONT>         * Can either be "connection" or "developerConnection".<a name="line.118"></a>
-<FONT color="green">119</FONT>         */<a name="line.119"></a>
-<FONT color="green">120</FONT>        @Parameter(defaultValue = "connection", required = true)<a name="line.120"></a>
-<FONT color="green">121</FONT>        private String connectionType;<a name="line.121"></a>
-<FONT color="green">122</FONT>    <a name="line.122"></a>
-<FONT color="green">123</FONT>        @Parameter(property = "project.build.outputEncoding")<a name="line.123"></a>
-<FONT color="green">124</FONT>        private String encoding;<a name="line.124"></a>
-<FONT color="green">125</FONT>    <a name="line.125"></a>
-<FONT color="green">126</FONT>        /**<a name="line.126"></a>
-<FONT color="green">127</FONT>         * Directory to create the changes.json file.<a name="line.127"></a>
-<FONT color="green">128</FONT>         */<a name="line.128"></a>
-<FONT color="green">129</FONT>        @Parameter(property = "project.build.directory")<a name="line.129"></a>
-<FONT color="green">130</FONT>        private File outputDirectory;<a name="line.130"></a>
-<FONT color="green">131</FONT>    <a name="line.131"></a>
-<FONT color="green">132</FONT>        @Parameter(property = "project.build.finalName")<a name="line.132"></a>
-<FONT color="green">133</FONT>        private String finalName;<a name="line.133"></a>
-<FONT color="green">134</FONT>    <a name="line.134"></a>
-<FONT color="green">135</FONT>        @Parameter(property = "project.basedir", readonly = true, required = true)<a name="line.135"></a>
-<FONT color="green">136</FONT>        private File basedir;<a name="line.136"></a>
-<FONT color="green">137</FONT>    <a name="line.137"></a>
-<FONT color="green">138</FONT>        @Parameter(property = "settings", readonly = true, required = true)<a name="line.138"></a>
-<FONT color="green">139</FONT>        private Settings settings;<a name="line.139"></a>
-<FONT color="green">140</FONT>    <a name="line.140"></a>
-<FONT color="green">141</FONT>        @Parameter(property = "project", readonly = true, required = true)<a name="line.141"></a>
-<FONT color="green">142</FONT>        private MavenProject project;<a name="line.142"></a>
-<FONT color="green">143</FONT>    <a name="line.143"></a>
-<FONT color="green">144</FONT>        @Parameter(property = "localRepository", readonly = true, required = true)<a name="line.144"></a>
-<FONT color="green">145</FONT>        private ArtifactRepository localRepository;<a name="line.145"></a>
-<FONT color="green">146</FONT>    <a name="line.146"></a>
-<FONT color="green">147</FONT>        @Parameter(property = "session", readonly = true, required = true)<a name="line.147"></a>
-<FONT color="green">148</FONT>        private MavenSession session;<a name="line.148"></a>
-<FONT color="green">149</FONT>    <a name="line.149"></a>
-<FONT color="green">150</FONT>        @Component<a name="line.150"></a>
-<FONT color="green">151</FONT>        private ArtifactMetadataSource artifactMetadataSource;<a name="line.151"></a>
-<FONT color="green">152</FONT>    <a name="line.152"></a>
-<FONT color="green">153</FONT>        @Component<a name="line.153"></a>
-<FONT color="green">154</FONT>        private ArtifactFactory artifactFactory;<a name="line.154"></a>
-<FONT color="green">155</FONT>    <a name="line.155"></a>
-<FONT color="green">156</FONT>        @Component<a name="line.156"></a>
-<FONT color="green">157</FONT>        private ProjectBuilder projectBuilder;<a name="line.157"></a>
-<FONT color="green">158</FONT>    <a name="line.158"></a>
-<FONT color="green">159</FONT>        @Component<a name="line.159"></a>
-<FONT color="green">160</FONT>        private ScmManager manager;<a name="line.160"></a>
-<FONT color="green">161</FONT>    <a name="line.161"></a>
-<FONT color="green">162</FONT>        @Component<a name="line.162"></a>
-<FONT color="green">163</FONT>        private MavenProjectHelper projectHelper;<a name="line.163"></a>
-<FONT color="green">164</FONT>    <a name="line.164"></a>
-<FONT color="green">165</FONT>        @Component<a name="line.165"></a>
-<FONT color="green">166</FONT>        private ArtifactResolver artifactResolver;<a name="line.166"></a>
-<FONT color="green">167</FONT>    <a name="line.167"></a>
-<FONT color="green">168</FONT>        private String connection = null;<a name="line.168"></a>
-<FONT color="green">169</FONT>    <a name="line.169"></a>
-<FONT color="green">170</FONT>        public void execute() throws MojoExecutionException, MojoFailureException {<a name="line.170"></a>
-<FONT color="green">171</FONT>            if (skip) {<a name="line.171"></a>
-<FONT color="green">172</FONT>                getLog().info("Execution is skipped.");<a name="line.172"></a>
-<FONT color="green">173</FONT>                return;<a name="line.173"></a>
-<FONT color="green">174</FONT>            }<a name="line.174"></a>
-<FONT color="green">175</FONT>            getLog().debug("Looking for previous release of " + project.getGroupId() + ":" + project.getArtifactId() + ":"<a name="line.175"></a>
-<FONT color="green">176</FONT>                    + project.getVersion());<a name="line.176"></a>
-<FONT color="green">177</FONT>            Artifact projectArtifact = artifactFactory<a name="line.177"></a>
-<FONT color="green">178</FONT>                    .createProjectArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion());<a name="line.178"></a>
-<FONT color="green">179</FONT>            ArtifactVersion projectVersion = new DefaultArtifactVersion(project.getVersion());<a name="line.179"></a>
-<FONT color="green">180</FONT>    <a name="line.180"></a>
-<FONT color="green">181</FONT>            ArtifactVersion latest = null;<a name="line.181"></a>
-<FONT color="green">182</FONT>            try {<a name="line.182"></a>
-<FONT color="green">183</FONT>                List&lt;ArtifactVersion&gt; artifactVersions = artifactMetadataSource<a name="line.183"></a>
-<FONT color="green">184</FONT>                        .retrieveAvailableVersions(projectArtifact, localRepository,<a name="line.184"></a>
-<FONT color="green">185</FONT>                                project.getRemoteArtifactRepositories());<a name="line.185"></a>
-<FONT color="green">186</FONT>                for (ArtifactVersion version : artifactVersions) {<a name="line.186"></a>
-<FONT color="green">187</FONT>                    if (SNAPSHOT_PATTERN.matcher(version.toString()).find() || projectVersion.compareTo(version) &lt;= 0) {<a name="line.187"></a>
-<FONT color="green">188</FONT>                        continue;<a name="line.188"></a>
-<FONT color="green">189</FONT>                    }<a name="line.189"></a>
-<FONT color="green">190</FONT>                    if (latest == null || latest.compareTo(version) &lt; 0) {<a name="line.190"></a>
-<FONT color="green">191</FONT>                        latest = version;<a name="line.191"></a>
-<FONT color="green">192</FONT>                    }<a name="line.192"></a>
-<FONT color="green">193</FONT>                }<a name="line.193"></a>
-<FONT color="green">194</FONT>            } catch (ArtifactMetadataRetrievalException e) {<a name="line.194"></a>
-<FONT color="green">195</FONT>                throw new MojoExecutionException(e.getMessage(), e);<a name="line.195"></a>
-<FONT color="green">196</FONT>            }<a name="line.196"></a>
-<FONT color="green">197</FONT>            getLog().debug("Previous release = " + latest);<a name="line.197"></a>
-<FONT color="green">198</FONT>    <a name="line.198"></a>
-<FONT color="green">199</FONT>            Map&lt;GroupArtifactId, String&gt; addedDeps = new LinkedHashMap&lt;GroupArtifactId, String&gt;();<a name="line.199"></a>
-<FONT color="green">200</FONT>            Map&lt;GroupArtifactId, String&gt; removedDeps = new LinkedHashMap&lt;GroupArtifactId, String&gt;();<a name="line.200"></a>
-<FONT color="green">201</FONT>            Map&lt;GroupArtifactId, Map.Entry&lt;String, String&gt;&gt; updatedDeps =<a name="line.201"></a>
-<FONT color="green">202</FONT>                    new LinkedHashMap&lt;GroupArtifactId, Map.Entry&lt;String, String&gt;&gt;();<a name="line.202"></a>
-<FONT color="green">203</FONT>    <a name="line.203"></a>
-<FONT color="green">204</FONT>            for (Dependency dep : project.getDependencies()) {<a name="line.204"></a>
-<FONT color="green">205</FONT>                addedDeps.put(new GroupArtifactId(dep), dep.getVersion());<a name="line.205"></a>
-<FONT color="green">206</FONT>            }<a name="line.206"></a>
-<FONT color="green">207</FONT>    <a name="line.207"></a>
-<FONT color="green">208</FONT>            String startTag = null;<a name="line.208"></a>
-<FONT color="green">209</FONT>            String endTag = null;<a name="line.209"></a>
-<FONT color="green">210</FONT>            if (latest != null) {<a name="line.210"></a>
-<FONT color="green">211</FONT>                Artifact latestArtifact = artifactFactory<a name="line.211"></a>
-<FONT color="green">212</FONT>                        .createProjectArtifact(project.getGroupId(), project.getArtifactId(), latest.toString());<a name="line.212"></a>
-<FONT color="green">213</FONT>                try {<a name="line.213"></a>
-<FONT color="green">214</FONT>                    artifactResolver.resolve(latestArtifact, project.getRemoteArtifactRepositories(), localRepository);<a name="line.214"></a>
-<FONT color="green">215</FONT>                } catch (ArtifactResolutionException e) {<a name="line.215"></a>
-<FONT color="green">216</FONT>                    throw new MojoExecutionException(e.getMessage(), e);<a name="line.216"></a>
-<FONT color="green">217</FONT>                } catch (ArtifactNotFoundException e) {<a name="line.217"></a>
-<FONT color="green">218</FONT>                    throw new MojoExecutionException(e.getMessage(), e);<a name="line.218"></a>
-<FONT color="green">219</FONT>                }<a name="line.219"></a>
-<FONT color="green">220</FONT>    <a name="line.220"></a>
-<FONT color="green">221</FONT>                ProjectBuildingRequest request = new DefaultProjectBuildingRequest();<a name="line.221"></a>
-<FONT color="green">222</FONT>    <a name="line.222"></a>
-<FONT color="green">223</FONT>                request.setProcessPlugins(true);<a name="line.223"></a>
-<FONT color="green">224</FONT>                request.setProfiles(request.getProfiles());<a name="line.224"></a>
-<FONT color="green">225</FONT>                request.setActiveProfileIds(session.getRequest().getActiveProfiles());<a name="line.225"></a>
-<FONT color="green">226</FONT>                request.setInactiveProfileIds(session.getRequest().getInactiveProfiles());<a name="line.226"></a>
-<FONT color="green">227</FONT>                request.setRemoteRepositories(session.getRequest().getRemoteRepositories());<a name="line.227"></a>
-<FONT color="green">228</FONT>                request.setSystemProperties(session.getSystemProperties());<a name="line.228"></a>
-<FONT color="green">229</FONT>                request.setUserProperties(session.getUserProperties());<a name="line.229"></a>
-<FONT color="green">230</FONT>                request.setRemoteRepositories(session.getRequest().getRemoteRepositories());<a name="line.230"></a>
-<FONT color="green">231</FONT>                request.setPluginArtifactRepositories(session.getRequest().getPluginArtifactRepositories());<a name="line.231"></a>
-<FONT color="green">232</FONT>                request.setRepositorySession(session.getRepositorySession());<a name="line.232"></a>
-<FONT color="green">233</FONT>                request.setLocalRepository(localRepository);<a name="line.233"></a>
-<FONT color="green">234</FONT>                request.setBuildStartTime(session.getRequest().getStartTime());<a name="line.234"></a>
-<FONT color="green">235</FONT>                request.setResolveDependencies(true);<a name="line.235"></a>
-<FONT color="green">236</FONT>                request.setValidationLevel(ModelBuildingRequest.VALIDATION_LEVEL_STRICT);<a name="line.236"></a>
-<FONT color="green">237</FONT>                MavenProject latestProject;<a name="line.237"></a>
-<FONT color="green">238</FONT>                try {<a name="line.238"></a>
-<FONT color="green">239</FONT>                    latestProject = projectBuilder.build(latestArtifact.getFile(), request).getProject();<a name="line.239"></a>
-<FONT color="green">240</FONT>                } catch (ProjectBuildingException e) {<a name="line.240"></a>
-<FONT color="green">241</FONT>                    throw new MojoExecutionException(e.getMessage(), e);<a name="line.241"></a>
-<FONT color="green">242</FONT>                }<a name="line.242"></a>
-<FONT color="green">243</FONT>                for (Dependency dep : latestProject.getDependencies()) {<a name="line.243"></a>
-<FONT color="green">244</FONT>                    GroupArtifactId key = new GroupArtifactId(dep);<a name="line.244"></a>
-<FONT color="green">245</FONT>                    if (addedDeps.containsKey(key)) {<a name="line.245"></a>
-<FONT color="green">246</FONT>                        String v = addedDeps.get(key);<a name="line.246"></a>
-<FONT color="green">247</FONT>                        addedDeps.remove(key);<a name="line.247"></a>
-<FONT color="green">248</FONT>                        if (!v.equals(dep.getVersion())) {<a name="line.248"></a>
-<FONT color="green">249</FONT>                            updatedDeps.put(key, new AbstractMap.SimpleImmutableEntry&lt;String, String&gt;(dep.getVersion(), v));<a name="line.249"></a>
-<FONT color="green">250</FONT>                        }<a name="line.250"></a>
-<FONT color="green">251</FONT>                    } else if (updatedDeps.containsKey(key)) {<a name="line.251"></a>
-<FONT color="green">252</FONT>                        String v = updatedDeps.get(key).getValue();<a name="line.252"></a>
-<FONT color="green">253</FONT>                        if (!v.equals(dep.getVersion())) {<a name="line.253"></a>
-<FONT color="green">254</FONT>                            updatedDeps.remove(key);<a name="line.254"></a>
-<FONT color="green">255</FONT>                            addedDeps.put(key, v);<a name="line.255"></a>
-<FONT color="green">256</FONT>                        } else {<a name="line.256"></a>
-<FONT color="green">257</FONT>                            updatedDeps.put(key, new AbstractMap.SimpleImmutableEntry&lt;String, String&gt;(dep.getVersion(), v));<a name="line.257"></a>
-<FONT color="green">258</FONT>                        }<a name="line.258"></a>
-<FONT color="green">259</FONT>                    } else {<a name="line.259"></a>
-<FONT color="green">260</FONT>                        removedDeps.put(key, dep.getVersion());<a name="line.260"></a>
-<FONT color="green">261</FONT>                    }<a name="line.261"></a>
-<FONT color="green">262</FONT>                }<a name="line.262"></a>
-<FONT color="green">263</FONT>    <a name="line.263"></a>
-<FONT color="green">264</FONT>                String tagNameFormat = getTagNameFormat(latestProject);<a name="line.264"></a>
-<FONT color="green">265</FONT>                getLog().debug("Start Tag name format = " + tagNameFormat);<a name="line.265"></a>
-<FONT color="green">266</FONT>                Interpolator interpolator = new StringSearchInterpolator("@{", "}");<a name="line.266"></a>
-<FONT color="green">267</FONT>                List&lt;String&gt; possiblePrefixes = java.util.Arrays.asList("project", "pom");<a name="line.267"></a>
-<FONT color="green">268</FONT>                Properties values = new Properties();<a name="line.268"></a>
-<FONT color="green">269</FONT>                values.setProperty("artifactId", project.getArtifactId());<a name="line.269"></a>
-<FONT color="green">270</FONT>                values.setProperty("groupId", project.getGroupId());<a name="line.270"></a>
-<FONT color="green">271</FONT>                values.setProperty("version", latest.toString());<a name="line.271"></a>
-<FONT color="green">272</FONT>                interpolator.addValueSource(new PrefixedPropertiesValueSource(possiblePrefixes, values, true));<a name="line.272"></a>
-<FONT color="green">273</FONT>                RecursionInterceptor recursionInterceptor = new PrefixAwareRecursionInterceptor(possiblePrefixes);<a name="line.273"></a>
-<FONT color="green">274</FONT>                try {<a name="line.274"></a>
-<FONT color="green">275</FONT>                    startTag = interpolator.interpolate(tagNameFormat, recursionInterceptor);<a name="line.275"></a>
-<FONT color="green">276</FONT>                } catch (InterpolationException e) {<a name="line.276"></a>
-<FONT color="green">277</FONT>                    throw new MojoExecutionException("Could not interpolate specified tag name format: " + tagNameFormat,<a name="line.277"></a>
-<FONT color="green">278</FONT>                            e);<a name="line.278"></a>
-<FONT color="green">279</FONT>                }<a name="line.279"></a>
-<FONT color="green">280</FONT>            }<a name="line.280"></a>
-<FONT color="green">281</FONT>            if (!SNAPSHOT_PATTERN.matcher(project.getVersion()).find()) {<a name="line.281"></a>
-<FONT color="green">282</FONT>                String tagNameFormat = getTagNameFormat(project);<a name="line.282"></a>
-<FONT color="green">283</FONT>                getLog().debug("End Tag name format = " + tagNameFormat);<a name="line.283"></a>
-<FONT color="green">284</FONT>                Interpolator interpolator = new StringSearchInterpolator("@{", "}");<a name="line.284"></a>
-<FONT color="green">285</FONT>                List&lt;String&gt; possiblePrefixes = java.util.Arrays.asList("project", "pom");<a name="line.285"></a>
-<FONT color="green">286</FONT>                Properties values = new Properties();<a name="line.286"></a>
-<FONT color="green">287</FONT>                values.setProperty("artifactId", project.getArtifactId());<a name="line.287"></a>
-<FONT color="green">288</FONT>                values.setProperty("groupId", project.getGroupId());<a name="line.288"></a>
-<FONT color="green">289</FONT>                values.setProperty("version", project.getVersion());<a name="line.289"></a>
-<FONT color="green">290</FONT>                interpolator.addValueSource(new PrefixedPropertiesValueSource(possiblePrefixes, values, true));<a name="line.290"></a>
-<FONT color="green">291</FONT>                RecursionInterceptor recursionInterceptor = new PrefixAwareRecursionInterceptor(possiblePrefixes);<a name="line.291"></a>
-<FONT color="green">292</FONT>                try {<a name="line.292"></a>
-<FONT color="green">293</FONT>                    endTag = interpolator.interpolate(tagNameFormat, recursionInterceptor);<a name="line.293"></a>
-<FONT color="green">294</FONT>                } catch (InterpolationException e) {<a name="line.294"></a>
-<FONT color="green">295</FONT>                    throw new MojoExecutionException("Could not interpolate specified tag name format: " + tagNameFormat,<a name="line.295"></a>
-<FONT color="green">296</FONT>                            e);<a name="line.296"></a>
-<FONT color="green">297</FONT>                }<a name="line.297"></a>
-<FONT color="green">298</FONT>            }<a name="line.298"></a>
-<FONT color="green">299</FONT>            getLog().info("Start tag = " + startTag);<a name="line.299"></a>
-<FONT color="green">300</FONT>            getLog().info("End tag = " + endTag);<a name="line.300"></a>
-<FONT color="green">301</FONT>    <a name="line.301"></a>
-<FONT color="green">302</FONT>            ChangeLogSet changeLog = null;<a name="line.302"></a>
-<FONT color="green">303</FONT>    <a name="line.303"></a>
-<FONT color="green">304</FONT>            ScmRepository repository;<a name="line.304"></a>
-<FONT color="green">305</FONT>            try {<a name="line.305"></a>
-<FONT color="green">306</FONT>                repository = getScmRepository();<a name="line.306"></a>
-<FONT color="green">307</FONT>                ScmProvider provider = null;<a name="line.307"></a>
-<FONT color="green">308</FONT>                try {<a name="line.308"></a>
-<FONT color="green">309</FONT>                    provider = manager.getProviderByRepository(repository);<a name="line.309"></a>
-<FONT color="green">310</FONT>                } catch (NoSuchScmProviderException e) {<a name="line.310"></a>
-<FONT color="green">311</FONT>                    throw new MojoExecutionException("Unknown/unsupported SCM provider", e);<a name="line.311"></a>
-<FONT color="green">312</FONT>                }<a name="line.312"></a>
-<FONT color="green">313</FONT>    <a name="line.313"></a>
-<FONT color="green">314</FONT>                ScmVersion scmStartVersion;<a name="line.314"></a>
-<FONT color="green">315</FONT>                ScmVersion scmEndVersion;<a name="line.315"></a>
-<FONT color="green">316</FONT>                if (repository.getProvider().equals("svn")) {<a name="line.316"></a>
-<FONT color="green">317</FONT>                    getLog().warn("SVN does not support the required changelog operations");<a name="line.317"></a>
-<FONT color="green">318</FONT>                } else {<a name="line.318"></a>
-<FONT color="green">319</FONT>                    scmStartVersion = startTag == null ? null : new ScmTag(startTag);<a name="line.319"></a>
-<FONT color="green">320</FONT>                    scmEndVersion = endTag == null ? null : new ScmTag(endTag);<a name="line.320"></a>
-<FONT color="green">321</FONT>                    ChangeLogScmResult changeLogScmResult;<a name="line.321"></a>
-<FONT color="green">322</FONT>                    try {<a name="line.322"></a>
-<FONT color="green">323</FONT>                        changeLogScmResult =<a name="line.323"></a>
-<FONT color="green">324</FONT>                                provider.changeLog(repository, new ScmFileSet(basedir), scmStartVersion, scmEndVersion);<a name="line.324"></a>
-<FONT color="green">325</FONT>                    } catch (ScmException e) {<a name="line.325"></a>
-<FONT color="green">326</FONT>                        throw new MojoExecutionException("Could not fetch changelog", e);<a name="line.326"></a>
-<FONT color="green">327</FONT>                    }<a name="line.327"></a>
-<FONT color="green">328</FONT>                    checkResult(changeLogScmResult);<a name="line.328"></a>
-<FONT color="green">329</FONT>    <a name="line.329"></a>
-<FONT color="green">330</FONT>                    changeLog = changeLogScmResult.getChangeLog();<a name="line.330"></a>
-<FONT color="green">331</FONT>                }<a name="line.331"></a>
-<FONT color="green">332</FONT>            } catch (ScmException e) {<a name="line.332"></a>
-<FONT color="green">333</FONT>                getLog().error("Could not get SCM repository", e);<a name="line.333"></a>
-<FONT color="green">334</FONT>            }<a name="line.334"></a>
-<FONT color="green">335</FONT>    <a name="line.335"></a>
-<FONT color="green">336</FONT>            if (StringUtils.isEmpty(encoding)) {<a name="line.336"></a>
-<FONT color="green">337</FONT>                getLog().warn("Output file encoding has not been set, using platform encoding " + System<a name="line.337"></a>
-<FONT color="green">338</FONT>                        .getProperty("file.encoding") + ", i.e. build is platform dependent!");<a name="line.338"></a>
-<FONT color="green">339</FONT>                encoding = System.getProperty("file.encoding");<a name="line.339"></a>
-<FONT color="green">340</FONT>            }<a name="line.340"></a>
-<FONT color="green">341</FONT>    <a name="line.341"></a>
-<FONT color="green">342</FONT>            if (!outputDirectory.isDirectory() &amp;&amp; !outputDirectory.mkdirs()) {<a name="line.342"></a>
-<FONT color="green">343</FONT>                throw new MojoExecutionException("Could not create directory " + outputDirectory);<a name="line.343"></a>
-<FONT color="green">344</FONT>            }<a name="line.344"></a>
-<FONT color="green">345</FONT>    <a name="line.345"></a>
-<FONT color="green">346</FONT>            File outputFile = new File(outputDirectory, finalName + "-changes.json");<a name="line.346"></a>
-<FONT color="green">347</FONT>    <a name="line.347"></a>
-<FONT color="green">348</FONT>            JsonFactory factory = new JsonFactory();<a name="line.348"></a>
-<FONT color="green">349</FONT>            try {<a name="line.349"></a>
-<FONT color="green">350</FONT>                JsonGenerator generator = factory.createJsonGenerator(outputFile, JsonEncoding.UTF8);<a name="line.350"></a>
-<FONT color="green">351</FONT>                generator.setPrettyPrinter(new DefaultPrettyPrinter());<a name="line.351"></a>
-<FONT color="green">352</FONT>                try {<a name="line.352"></a>
-<FONT color="green">353</FONT>                    generator.writeStartObject();<a name="line.353"></a>
-<FONT color="green">354</FONT>                    generator.writeFieldName("dependencies");<a name="line.354"></a>
-<FONT color="green">355</FONT>                    writeDependenciesDelta(addedDeps, removedDeps, updatedDeps, generator);<a name="line.355"></a>
-<FONT color="green">356</FONT>                    if (changeLog != null) {<a name="line.356"></a>
-<FONT color="green">357</FONT>                        generator.writeFieldName("scm");<a name="line.357"></a>
-<FONT color="green">358</FONT>                        writeChangeLog(generator, changeLog);<a name="line.358"></a>
-<FONT color="green">359</FONT>                    }<a name="line.359"></a>
-<FONT color="green">360</FONT>                    generator.writeEndObject();<a name="line.360"></a>
-<FONT color="green">361</FONT>                } finally {<a name="line.361"></a>
-<FONT color="green">362</FONT>                    generator.close();<a name="line.362"></a>
-<FONT color="green">363</FONT>                }<a name="line.363"></a>
-<FONT color="green">364</FONT>            } catch (IOException e) {<a name="line.364"></a>
-<FONT color="green">365</FONT>                throw new MojoExecutionException(e.getMessage(), e);<a name="line.365"></a>
-<FONT color="green">366</FONT>            }<a name="line.366"></a>
-<FONT color="green">367</FONT>            projectHelper.attachArtifact(project, "json", "changes", outputFile);<a name="line.367"></a>
-<FONT color="green">368</FONT>        }<a name="line.368"></a>
-<FONT color="green">369</FONT>    <a name="line.369"></a>
-<FONT color="green">370</FONT>        private void writeDependenciesDelta(Map&lt;GroupArtifactId, String&gt; addedDeps,<a name="line.370"></a>
-<FONT color="green">371</FONT>                                            Map&lt;GroupArtifactId, String&gt; removedDeps,<a name="line.371"></a>
-<FONT color="green">372</FONT>                                            Map&lt;GroupArtifactId, Map.Entry&lt;String, String&gt;&gt; updatedDeps,<a name="line.372"></a>
-<FONT color="green">373</FONT>                                            JsonGenerator generator) throws IOException {<a name="line.373"></a>
-<FONT color="green">374</FONT>            generator.writeStartObject();<a name="line.374"></a>
-<FONT color="green">375</FONT>            if (!addedDeps.isEmpty()) {<a name="line.375"></a>
-<FONT color="green">376</FONT>                generator.writeArrayFieldStart("added");<a name="line.376"></a>
-<FONT color="green">377</FONT>                for (Map.Entry&lt;GroupArtifactId, String&gt; e : addedDeps.entrySet()) {<a name="line.377"></a>
-<FONT color="green">378</FONT>                    generator.writeStartObject();<a name="line.378"></a>
-<FONT color="green">379</FONT>                    generator.writeStringField("groupId", e.getKey().getGroupId());<a name="line.379"></a>
-<FONT color="green">380</FONT>                    generator.writeStringField("artifactId", e.getKey().getArtifactId());<a name="line.380"></a>
-<FONT color="green">381</FONT>                    generator.writeStringField("version", e.getValue());<a name="line.381"></a>
-<FONT color="green">382</FONT>                    generator.writeEndObject();<a name="line.382"></a>
-<FONT color="green">383</FONT>                }<a name="line.383"></a>
-<FONT color="green">384</FONT>                generator.writeEndArray();<a name="line.384"></a>
-<FONT color="green">385</FONT>            }<a name="line.385"></a>
-<FONT color="green">386</FONT>            if (!removedDeps.isEmpty()) {<a name="line.386"></a>
-<FONT color="green">387</FONT>                generator.writeArrayFieldStart("removed");<a name="line.387"></a>
-<FONT color="green">388</FONT>                for (Map.Entry&lt;GroupArtifactId, String&gt; e : removedDeps.entrySet()) {<a name="line.388"></a>
-<FONT color="green">389</FONT>                    generator.writeStartObject();<a name="line.389"></a>
-<FONT color="green">390</FONT>                    generator.writeStringField("groupId", e.getKey().getGroupId());<a name="line.390"></a>
-<FONT color="green">391</FONT>                    generator.writeStringField("artifactId", e.getKey().getArtifactId());<a name="line.391"></a>
-<FONT color="green">392</FONT>                    generator.writeStringField("version", e.getValue());<a name="line.392"></a>
-<FONT color="green">393</FONT>                    generator.writeEndObject();<a name="line.393"></a>
-<FONT color="green">394</FONT>                }<a name="line.394"></a>
-<FONT color="green">395</FONT>                generator.writeEndArray();<a name="line.395"></a>
-<FONT color="green">396</FONT>            }<a name="line.396"></a>
-<FONT color="green">397</FONT>            if (!updatedDeps.isEmpty()) {<a name="line.397"></a>
-<FONT color="green">398</FONT>                generator.writeArrayFieldStart("updated");<a name="line.398"></a>
-<FONT color="green">399</FONT>                for (Map.Entry&lt;GroupArtifactId, Map.Entry&lt;String, String&gt;&gt; e : updatedDeps.entrySet()) {<a name="line.399"></a>
-<FONT color="green">400</FONT>                    generator.writeStartObject();<a name="line.400"></a>
-<FONT color="green">401</FONT>                    generator.writeStringField("groupId", e.getKey().getGroupId());<a name="line.401"></a>
-<FONT color="green">402</FONT>                    generator.writeStringField("artifactId", e.getKey().getArtifactId());<a name="line.402"></a>
-<FONT color="green">403</FONT>                    generator.writeStringField("version", e.getValue().getValue());<a name="line.403"></a>
-<FONT color="green">404</FONT>                    generator.writeStringField("originalVersion", e.getValue().getKey());<a name="line.404"></a>
-<FONT color="green">405</FONT>                    generator.writeEndObject();<a name="line.405"></a>
-<FONT color="green">406</FONT>                }<a name="line.406"></a>
-<FONT color="green">407</FONT>                generator.writeEndArray();<a name="line.407"></a>
-<FONT color="green">408</FONT>            }<a name="line.408"></a>
-<FONT color="green">409</FONT>            generator.writeEndObject();<a name="line.409"></a>
-<FONT color="green">410</FONT>        }<a name="line.410"></a>
-<FONT color="green">411</FONT>    <a name="line.411"></a>
-<FONT color="green">412</FONT>        private String getTagNameFormat(MavenProject project) {<a name="line.412"></a>
-<FONT color="green">413</FONT>            Plugin releasePlugin = null;<a name="line.413"></a>
-<FONT color="green">414</FONT>            for (Plugin plugin : project.getBuild().getPlugins()) {<a name="line.414"></a>
-<FONT color="green">415</FONT>                if ("org.apache.maven.plugins".equals(plugin.getGroupId()) &amp;&amp; "maven-release-plugin"<a name="line.415"></a>
-<FONT color="green">416</FONT>                        .equals(plugin.getArtifactId())) {<a name="line.416"></a>
-<FONT color="green">417</FONT>                    releasePlugin = plugin;<a name="line.417"></a>
-<FONT color="green">418</FONT>                    break;<a name="line.418"></a>
-<FONT color="green">419</FONT>                }<a name="line.419"></a>
-<FONT color="green">420</FONT>            }<a name="line.420"></a>
-<FONT color="green">421</FONT>            String tagNameFormat = "@{project.artifactId}-@{project.version}";<a name="line.421"></a>
-<FONT color="green">422</FONT>            if (releasePlugin != null) {<a name="line.422"></a>
-<FONT color="green">423</FONT>                Xpp3Dom dom = (Xpp3Dom) releasePlugin.getConfiguration();<a name="line.423"></a>
-<FONT color="green">424</FONT>                Xpp3Dom tagNameFormatDom = dom.getChild("tagNameFormat");<a name="line.424"></a>
-<FONT color="green">425</FONT>                if (tagNameFormatDom != null) {<a name="line.425"></a>
-<FONT color="green">426</FONT>                    tagNameFormat = tagNameFormatDom.getValue();<a name="line.426"></a>
-<FONT color="green">427</FONT>                }<a name="line.427"></a>
-<FONT color="green">428</FONT>            }<a name="line.428"></a>
-<FONT color="green">429</FONT>            return tagNameFormat;<a name="line.429"></a>
-<FONT color="green">430</FONT>        }<a name="line.430"></a>
-<FONT color="green">431</FONT>    <a name="line.431"></a>
-<FONT color="green">432</FONT>        private void writeChangeLog(JsonGenerator generator, ChangeLogSet changeLog) throws IOException {<a name="line.432"></a>
-<FONT color="green">433</FONT>            generator.writeStartArray();<a name="line.433"></a>
-<FONT color="green">434</FONT>            try {<a name="line.434"></a>
-<FONT color="green">435</FONT>                for (ChangeSet changeSet : changeLog.getChangeSets()) {<a name="line.435"></a>
-<FONT color="green">436</FONT>                    writeChangeSet(generator, changeSet);<a name="line.436"></a>
-<FONT color="green">437</FONT>                }<a name="line.437"></a>
-<FONT color="green">438</FONT>            } finally {<a name="line.438"></a>
-<FONT color="green">439</FONT>                generator.writeEndArray();<a name="line.439"></a>
-<FONT color="green">440</FONT>            }<a name="line.440"></a>
-<FONT color="green">441</FONT>        }<a name="line.441"></a>
-<FONT color="green">442</FONT>    <a name="line.442"></a>
-<FONT color="green">443</FONT>        private void writeChangeSet(JsonGenerator generator, ChangeSet changeSet) throws IOException {<a name="line.443"></a>
-<FONT color="green">444</FONT>            generator.writeStartObject();<a name="line.444"></a>
-<FONT color="green">445</FONT>            try {<a name="line.445"></a>
-<FONT color="green">446</FONT>                if (StringUtils.isNotEmpty(changeSet.getAuthor())) {<a name="line.446"></a>
-<FONT color="green">447</FONT>                    generator.writeStringField("author", changeSet.getAuthor());<a name="line.447"></a>
-<FONT color="green">448</FONT>                }<a name="line.448"></a>
-<FONT color="green">449</FONT>                if (StringUtils.isNotEmpty(changeSet.getComment())) {<a name="line.449"></a>
-<FONT color="green">450</FONT>                    generator.writeStringField("comment", changeSet.getComment());<a name="line.450"></a>
-<FONT color="green">451</FONT>                }<a name="line.451"></a>
-<FONT color="green">452</FONT>                if (changeSet.getDate() != null) {<a name="line.452"></a>
-<FONT color="green">453</FONT>                    SimpleDateFormat iso8601format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");<a name="line.453"></a>
-<FONT color="green">454</FONT>                    iso8601format.setTimeZone(TimeZone.getTimeZone("UTC"));<a name="line.454"></a>
-<FONT color="green">455</FONT>                    generator.writeStringField("date", iso8601format.format(changeSet.getDate()));<a name="line.455"></a>
-<FONT color="green">456</FONT>                }<a name="line.456"></a>
-<FONT color="green">457</FONT>                if (changeSet.getParentRevision() != null) {<a name="line.457"></a>
-<FONT color="green">458</FONT>                    generator.writeStringField("parentRevision", changeSet.getParentRevision());<a name="line.458"></a>
-<FONT color="green">459</FONT>                }<a name="line.459"></a>
-<FONT color="green">460</FONT>                if (!changeSet.getMergedRevisions().isEmpty()) {<a name="line.460"></a>
-<FONT color="green">461</FONT>                    generator.writeArrayFieldStart("mergedRevisions");<a name="line.461"></a>
-<FONT color="green">462</FONT>                    try {<a name="line.462"></a>
-<FONT color="green">463</FONT>                        for (String revision : changeSet.getMergedRevisions()) {<a name="line.463"></a>
-<FONT color="green">464</FONT>                            generator.writeString(revision);<a name="line.464"></a>
-<FONT color="green">465</FONT>                        }<a name="line.465"></a>
-<FONT color="green">466</FONT>                    } finally {<a name="line.466"></a>
-<FONT color="green">467</FONT>                        generator.writeEndArray();<a name="line.467"></a>
-<FONT color="green">468</FONT>                    }<a name="line.468"></a>
-<FONT color="green">469</FONT>                }<a name="line.469"></a>
-<FONT color="green">470</FONT>                if (!changeSet.getFiles().isEmpty()) {<a name="line.470"></a>
-<FONT color="green">471</FONT>                    generator.writeArrayFieldStart("files");<a name="line.471"></a>
-<FONT color="green">472</FONT>                    try {<a name="line.472"></a>
-<FONT color="green">473</FONT>                        for (ChangeFile file : changeSet.getFiles()) {<a name="line.473"></a>
-<FONT color="green">474</FONT>                            writeChangeFile(generator, file);<a name="line.474"></a>
-<FONT color="green">475</FONT>                        }<a name="line.475"></a>
-<FONT color="green">476</FONT>                    } finally {<a name="line.476"></a>
-<FONT color="green">477</FONT>                        generator.writeEndArray();<a name="line.477"></a>
-<FONT color="green">478</FONT>                    }<a name="line.478"></a>
-<FONT color="green">479</FONT>                }<a name="line.479"></a>
-<FONT color="green">480</FONT>            } finally {<a name="line.480"></a>
-<FONT color="green">481</FONT>                generator.writeEndObject();<a name="line.481"></a>
-<FONT color="green">482</FONT>            }<a name="line.482"></a>
-<FONT color="green">483</FONT>        }<a name="line.483"></a>
-<FONT color="green">484</FONT>    <a name="line.484"></a>
-<FONT color="green">485</FONT>        private void writeChangeFile(JsonGenerator generator, ChangeFile file) throws IOException {<a name="line.485"></a>
-<FONT color="green">486</FONT>            generator.writeStartObject();<a name="line.486"></a>
-<FONT color="green">487</FONT>            try {<a name="line.487"></a>
-<FONT color="green">488</FONT>                if (file.getAction() != null) {<a name="line.488"></a>
-<FONT color="green">489</FONT>                    generator.writeStringField("action", file.getAction().toString());<a name="line.489"></a>
-<FONT color="green">490</FONT>                }<a name="line.490"></a>
-<FONT color="green">491</FONT>                if (file.getName() != null) {<a name="line.491"></a>
-<FONT color="green">492</FONT>                    generator.writeStringField("name", file.getName());<a name="line.492"></a>
-<FONT color="green">493</FONT>                }<a name="line.493"></a>
-<FONT color="green">494</FONT>                if (file.getRevision() != null) {<a name="line.494"></a>
-<FONT color="green">495</FONT>                    generator.writeStringField("revision", file.getRevision());<a name="line.495"></a>
-<FONT color="green">496</FONT>                }<a name="line.496"></a>
-<FONT color="green">497</FONT>                if (file.getOriginalName() != null) {<a name="line.497"></a>
-<FONT color="green">498</FONT>                    generator.writeStringField("originalName", file.getOriginalName());<a name="line.498"></a>
-<FONT color="green">499</FONT>                }<a name="line.499"></a>
-<FONT color="green">500</FONT>                if (file.getOriginalRevision() != null) {<a name="line.500"></a>
-<FONT color="green">501</FONT>                    generator.writeStringField("originalRevision", file.getOriginalRevision());<a name="line.501"></a>
-<FONT color="green">502</FONT>                }<a name="line.502"></a>
-<FONT color="green">503</FONT>            } finally {<a name="line.503"></a>
-<FONT color="green">504</FONT>                generator.writeEndObject();<a name="line.504"></a>
-<FONT color="green">505</FONT>            }<a name="line.505"></a>
-<FONT color="green">506</FONT>        }<a name="line.506"></a>
-<FONT color="green">507</FONT>    <a name="line.507"></a>
-<FONT color="green">508</FONT>        public ScmRepository getScmRepository()<a name="line.508"></a>
-<FONT color="green">509</FONT>                throws ScmException {<a name="line.509"></a>
-<FONT color="green">510</FONT>            ScmRepository repository;<a name="line.510"></a>
-<FONT color="green">511</FONT>    <a name="line.511"></a>
-<FONT color="green">512</FONT>            try {<a name="line.512"></a>
-<FONT color="green">513</FONT>                repository = manager.makeScmRepository(getConnection());<a name="line.513"></a>
-<FONT color="green">514</FONT>    <a name="line.514"></a>
-<FONT color="green">515</FONT>                ScmProviderRepository providerRepo = repository.getProviderRepository();<a name="line.515"></a>
-<FONT color="green">516</FONT>    <a name="line.516"></a>
-<FONT color="green">517</FONT>                if (!StringUtils.isEmpty(username)) {<a name="line.517"></a>
-<FONT color="green">518</FONT>                    providerRepo.setUser(username);<a name="line.518"></a>
-<FONT color="green">519</FONT>                }<a name="line.519"></a>
-<FONT color="green">520</FONT>    <a name="line.520"></a>
-<FONT color="green">521</FONT>                if (!StringUtils.isEmpty(password)) {<a name="line.521"></a>
-<FONT color="green">522</FONT>                    providerRepo.setPassword(password);<a name="line.522"></a>
-<FONT color="green">523</FONT>                }<a name="line.523"></a>
-<FONT color="green">524</FONT>    <a name="line.524"></a>
-<FONT color="green">525</FONT>                if (repository.getProviderRepository() instanceof ScmProviderRepositoryWithHost) {<a name="line.525"></a>
-<FONT color="green">526</FONT>                    ScmProviderRepositoryWithHost repo = (ScmProviderRepositoryWithHost) repository.getProviderRepository();<a name="line.526"></a>
-<FONT color="green">527</FONT>    <a name="line.527"></a>
-<FONT color="green">528</FONT>                    loadInfosFromSettings(repo);<a name="line.528"></a>
-<FONT color="green">529</FONT>    <a name="line.529"></a>
-<FONT color="green">530</FONT>                    if (!StringUtils.isEmpty(username)) {<a name="line.530"></a>
-<FONT color="green">531</FONT>                        repo.setUser(username);<a name="line.531"></a>
-<FONT color="green">532</FONT>                    }<a name="line.532"></a>
-<FONT color="green">533</FONT>    <a name="line.533"></a>
-<FONT color="green">534</FONT>                    if (!StringUtils.isEmpty(password)) {<a name="line.534"></a>
-<FONT color="green">535</FONT>                        repo.setPassword(password);<a name="line.535"></a>
-<FONT color="green">536</FONT>                    }<a name="line.536"></a>
-<FONT color="green">537</FONT>    <a name="line.537"></a>
-<FONT color="green">538</FONT>                    if (!StringUtils.isEmpty(privateKey)) {<a name="line.538"></a>
-<FONT color="green">539</FONT>                        repo.setPrivateKey(privateKey);<a name="line.539"></a>
-<FONT color="green">540</FONT>                    }<a name="line.540"></a>
-<FONT color="green">541</FONT>    <a name="line.541"></a>
-<FONT color="green">542</FONT>                    if (!StringUtils.isEmpty(passphrase)) {<a name="line.542"></a>
-<FONT color="green">543</FONT>                        repo.setPassphrase(passphrase);<a name="line.543"></a>
-<FONT color="green">544</FONT>                    }<a name="line.544"></a>
-<FONT color="green">545</FONT>                }<a name="line.545"></a>
-<FONT color="green">546</FONT>    <a name="line.546"></a>
-<FONT color="green">547</FONT>                if (!StringUtils.isEmpty(tagBase) &amp;&amp; repository.getProvider().equals("svn")) {<a name="line.547"></a>
-<FONT color="green">548</FONT>                    SvnScmProviderRepository svnRepo = (SvnScmProviderRepository) repository.getProviderRepository();<a name="line.548"></a>
-<FONT color="green">549</FONT>    <a name="line.549"></a>
-<FONT color="green">550</FONT>                    svnRepo.setTagBase(tagBase);<a name="line.550"></a>
-<FONT color="green">551</FONT>                }<a name="line.551"></a>
-<FONT color="green">552</FONT>            } catch (Exception e) {<a name="line.552"></a>
-<FONT color="green">553</FONT>                throw new ScmException("Can't load the scm provider.", e);<a name="line.553"></a>
-<FONT color="green">554</FONT>            }<a name="line.554"></a>
-<FONT color="green">555</FONT>    <a name="line.555"></a>
-<FONT color="green">556</FONT>            return repository;<a name="line.556"></a>
-<FONT color="green">557</FONT>        }<a name="line.557"></a>
-<FONT color="green">558</FONT>    <a name="line.558"></a>
-<FONT color="green">559</FONT>        /**<a name="line.559"></a>
-<FONT color="green">560</FONT>         * Load username password from settings if user has not set them in JVM properties<a name="line.560"></a>
-<FONT color="green">561</FONT>         *<a name="line.561"></a>
-<FONT color="green">562</FONT>         * @param repo<a name="line.562"></a>
-<FONT color="green">563</FONT>         */<a name="line.563"></a>
-<FONT color="green">564</FONT>        private void loadInfosFromSettings(ScmProviderRepositoryWithHost repo) {<a name="line.564"></a>
-<FONT color="green">565</FONT>            if (username == null || password == null) {<a name="line.565"></a>
-<FONT color="green">566</FONT>                String host = repo.getHost();<a name="line.566"></a>
-<FONT color="green">567</FONT>    <a name="line.567"></a>
-<FONT color="green">568</FONT>                int port = repo.getPort();<a name="line.568"></a>
-<FONT color="green">569</FONT>    <a name="line.569"></a>
-<FONT color="green">570</FONT>                if (port &gt; 0) {<a name="line.570"></a>
-<FONT color="green">571</FONT>                    host += ":" + port;<a name="line.571"></a>
-<FONT color="green">572</FONT>                }<a name="line.572"></a>
-<FONT color="green">573</FONT>    <a name="line.573"></a>
-<FONT color="green">574</FONT>                Server server = this.settings.getServer(host);<a name="line.574"></a>
-<FONT color="green">575</FONT>    <a name="line.575"></a>
-<FONT color="green">576</FONT>                if (server != null) {<a name="line.576"></a>
-<FONT color="green">577</FONT>                    if (username == null) {<a name="line.577"></a>
-<FONT color="green">578</FONT>                        username = this.settings.getServer(host).getUsername();<a name="line.578"></a>
-<FONT color="green">579</FONT>                    }<a name="line.579"></a>
-<FONT color="green">580</FONT>    <a name="line.580"></a>
-<FONT color="green">581</FONT>                    if (password == null) {<a name="line.581"></a>
-<FONT color="green">582</FONT>                        password = this.settings.getServer(host).getPassword();<a name="line.582"></a>
-<FONT color="green">583</FONT>                    }<a name="line.583"></a>
-<FONT color="green">584</FONT>    <a name="line.584"></a>
-<FONT color="green">585</FONT>                    if (privateKey == null) {<a name="line.585"></a>
-<FONT color="green">586</FONT>                        privateKey = this.settings.getServer(host).getPrivateKey();<a name="line.586"></a>
-<FONT color="green">587</FONT>                    }<a name="line.587"></a>
-<FONT color="green">588</FONT>    <a name="line.588"></a>
-<FONT color="green">589</FONT>                    if (passphrase == null) {<a name="line.589"></a>
-<FONT color="green">590</FONT>                        passphrase = this.settings.getServer(host).getPassphrase();<a name="line.590"></a>
-<FONT color="green">591</FONT>                    }<a name="line.591"></a>
-<FONT color="green">592</FONT>                }<a name="line.592"></a>
-<FONT color="green">593</FONT>            }<a name="line.593"></a>
-<FONT color="green">594</FONT>        }<a name="line.594"></a>
-<FONT color="green">595</FONT>    <a name="line.595"></a>
-<FONT color="green">596</FONT>        public void checkResult(ScmResult result)<a name="line.596"></a>
-<FONT color="green">597</FONT>                throws MojoExecutionException {<a name="line.597"></a>
-<FONT color="green">598</FONT>            if (!result.isSuccess()) {<a name="line.598"></a>
-<FONT color="green">599</FONT>                getLog().error("Provider message:");<a name="line.599"></a>
-<FONT color="green">600</FONT>    <a name="line.600"></a>
-<FONT color="green">601</FONT>                getLog().error(result.getProviderMessage() == null ? "" : result.getProviderMessage());<a name="line.601"></a>
-<FONT color="green">602</FONT>    <a name="line.602"></a>
-<FONT color="green">603</FONT>                getLog().error("Command output:");<a name="line.603"></a>
-<FONT color="green">604</FONT>    <a name="line.604"></a>
-<FONT color="green">605</FONT>                getLog().error(result.getCommandOutput() == null ? "" : result.getCommandOutput());<a name="line.605"></a>
-<FONT color="green">606</FONT>    <a name="line.606"></a>
-<FONT color="green">607</FONT>                throw new MojoExecutionException("Command failed.");<a name="line.607"></a>
-<FONT color="green">608</FONT>            }<a name="line.608"></a>
-<FONT color="green">609</FONT>        }<a name="line.609"></a>
-<FONT color="green">610</FONT>    <a name="line.610"></a>
-<FONT color="green">611</FONT>        /**<a name="line.611"></a>
-<FONT color="green">612</FONT>         * used to retrieve the SCM connection string<a name="line.612"></a>
-<FONT color="green">613</FONT>         *<a name="line.613"></a>
-<FONT color="green">614</FONT>         * @return the url string used to connect to the SCM<a name="line.614"></a>
-<FONT color="green">615</FONT>         * @throws MojoExecutionException when there is insufficient information to retrieve the SCM connection string<a name="line.615"></a>
-<FONT color="green">616</FONT>         */<a name="line.616"></a>
-<FONT color="green">617</FONT>        protected String getConnection()<a name="line.617"></a>
-<FONT color="green">618</FONT>                throws MojoExecutionException {<a name="line.618"></a>
-<FONT color="green">619</FONT>            if (this.connection != null) {<a name="line.619"></a>
-<FONT color="green">620</FONT>                return connection;<a name="line.620"></a>
-<FONT color="green">621</FONT>            }<a name="line.621"></a>
-<FONT color="green">622</FONT>    <a name="line.622"></a>
-<FONT color="green">623</FONT>            if (project.getScm() == null) {<a name="line.623"></a>
-<FONT color="green">624</FONT>                throw new MojoExecutionException("SCM Connection is not set.");<a name="line.624"></a>
-<FONT color="green">625</FONT>            }<a name="line.625"></a>
-<FONT color="green">626</FONT>    <a name="line.626"></a>
-<FONT color="green">627</FONT>            String scmConnection = project.getScm().getConnection();<a name="line.627"></a>
-<FONT color="green">628</FONT>            if (StringUtils.isNotEmpty(scmConnection) &amp;&amp; "connection".equals(connectionType.toLowerCase())) {<a name="line.628"></a>
-<FONT color="green">629</FONT>                connection = scmConnection;<a name="line.629"></a>
-<FONT color="green">630</FONT>            }<a name="line.630"></a>
-<FONT color="green">631</FONT>    <a name="line.631"></a>
-<FONT color="green">632</FONT>            String scmDeveloper = project.getScm().getDeveloperConnection();<a name="line.632"></a>
-<FONT color="green">633</FONT>            if (StringUtils.isNotEmpty(scmDeveloper) &amp;&amp; "developerconnection".equals(connectionType.toLowerCase())) {<a name="line.633"></a>
-<FONT color="green">634</FONT>                connection = scmDeveloper;<a name="line.634"></a>
-<FONT color="green">635</FONT>            }<a name="line.635"></a>
-<FONT color="green">636</FONT>    <a name="line.636"></a>
-<FONT color="green">637</FONT>            if (StringUtils.isEmpty(connection)) {<a name="line.637"></a>
-<FONT color="green">638</FONT>                throw new MojoExecutionException("SCM Connection is not set.");<a name="line.638"></a>
-<FONT color="green">639</FONT>            }<a name="line.639"></a>
-<FONT color="green">640</FONT>    <a name="line.640"></a>
-<FONT color="green">641</FONT>            return connection;<a name="line.641"></a>
-<FONT color="green">642</FONT>        }<a name="line.642"></a>
-<FONT color="green">643</FONT>    <a name="line.643"></a>
-<FONT color="green">644</FONT>        /**<a name="line.644"></a>
-<FONT color="green">645</FONT>         * Determines the relative path from trunk to tag, and adds this relative path<a name="line.645"></a>
-<FONT color="green">646</FONT>         * to the url.<a name="line.646"></a>
-<FONT color="green">647</FONT>         *<a name="line.647"></a>
-<FONT color="green">648</FONT>         * @param trunkPath - The trunk url<a name="line.648"></a>
-<FONT color="green">649</FONT>         * @param tagPath   - The tag base<a name="line.649"></a>
-<FONT color="green">650</FONT>         * @param urlPath   - scm.url or scm.connection<a name="line.650"></a>
-<FONT color="green">651</FONT>         * @return The url path for the tag.<a name="line.651"></a>
-<FONT color="green">652</FONT>         */<a name="line.652"></a>
-<FONT color="green">653</FONT>        private String translateUrlPath(String trunkPath, String tagPath, String urlPath) {<a name="line.653"></a>
-<FONT color="green">654</FONT>            trunkPath = trunkPath.trim();<a name="line.654"></a>
-<FONT color="green">655</FONT>            tagPath = tagPath.trim();<a name="line.655"></a>
-<FONT color="green">656</FONT>            //Strip the slash at the end if one is present<a name="line.656"></a>
-<FONT color="green">657</FONT>            if (trunkPath.endsWith("/")) {<a name="line.657"></a>
-<FONT color="green">658</FONT>                trunkPath = trunkPath.substring(0, trunkPath.length() - 1);<a name="line.658"></a>
-<FONT color="green">659</FONT>            }<a name="line.659"></a>
-<FONT color="green">660</FONT>            if (tagPath.endsWith("/")) {<a name="line.660"></a>
-<FONT color="green">661</FONT>                tagPath = tagPath.substring(0, tagPath.length() - 1);<a name="line.661"></a>
-<FONT color="green">662</FONT>            }<a name="line.662"></a>
-<FONT color="green">663</FONT>            char[] tagPathChars = trunkPath.toCharArray();<a name="line.663"></a>
-<FONT color="green">664</FONT>            char[] trunkPathChars = tagPath.toCharArray();<a name="line.664"></a>
-<FONT color="green">665</FONT>            // Find the common path between trunk and tags<a name="line.665"></a>
-<FONT color="green">666</FONT>            int i = 0;<a name="line.666"></a>
-<FONT color="green">667</FONT>            while ((i &lt; tagPathChars.length) &amp;&amp; (i &lt; trunkPathChars.length) &amp;&amp; tagPathChars[i] == trunkPathChars[i]) {<a name="line.667"></a>
-<FONT color="green">668</FONT>                ++i;<a name="line.668"></a>
-<FONT color="green">669</FONT>            }<a name="line.669"></a>
-<FONT color="green">670</FONT>            // If there is nothing common between trunk and tags, or the relative<a name="line.670"></a>
-<FONT color="green">671</FONT>            // path does not exist in the url, then just return the tag.<a name="line.671"></a>
-<FONT color="green">672</FONT>            if (i == 0 || urlPath.indexOf(trunkPath.substring(i)) &lt; 0) {<a name="line.672"></a>
-<FONT color="green">673</FONT>                return tagPath;<a name="line.673"></a>
-<FONT color="green">674</FONT>            } else {<a name="line.674"></a>
-<FONT color="green">675</FONT>                return StringUtils.replace(urlPath, trunkPath.substring(i), tagPath.substring(i));<a name="line.675"></a>
-<FONT color="green">676</FONT>            }<a name="line.676"></a>
-<FONT color="green">677</FONT>        }<a name="line.677"></a>
-<FONT color="green">678</FONT>    <a name="line.678"></a>
-<FONT color="green">679</FONT>        private static class GroupArtifactId {<a name="line.679"></a>
-<FONT color="green">680</FONT>            private final String groupId;<a name="line.680"></a>
-<FONT color="green">681</FONT>            private final String artifactId;<a name="line.681"></a>
-<FONT color="green">682</FONT>    <a name="line.682"></a>
-<FONT color="green">683</FONT>            public GroupArtifactId(Dependency dependency) {<a name="line.683"></a>
-<FONT color="green">684</FONT>                this.groupId = dependency.getGroupId();<a name="line.684"></a>
-<FONT color="green">685</FONT>                this.artifactId = dependency.getArtifactId();<a name="line.685"></a>
-<FONT color="green">686</FONT>            }<a name="line.686"></a>
-<FONT color="green">687</FONT>    <a name="line.687"></a>
-<FONT color="green">688</FONT>            public String getArtifactId() {<a name="line.688"></a>
-<FONT color="green">689</FONT>                return artifactId;<a name="line.689"></a>
-<FONT color="green">690</FONT>            }<a name="line.690"></a>
-<FONT color="green">691</FONT>    <a name="line.691"></a>
-<FONT color="green">692</FONT>            public String getGroupId() {<a name="line.692"></a>
-<FONT color="green">693</FONT>                return groupId;<a name="line.693"></a>
-<FONT color="green">694</FONT>            }<a name="line.694"></a>
-<FONT color="green">695</FONT>    <a name="line.695"></a>
-<FONT color="green">696</FONT>            @Override<a name="line.696"></a>
-<FONT color="green">697</FONT>            public boolean equals(Object o) {<a name="line.697"></a>
-<FONT color="green">698</FONT>                if (this == o) {<a name="line.698"></a>
-<FONT color="green">699</FONT>                    return true;<a name="line.699"></a>
-<FONT color="green">700</FONT>                }<a name="line.700"></a>
-<FONT color="green">701</FONT>                if (o == null || getClass() != o.getClass()) {<a name="line.701"></a>
-<FONT color="green">702</FONT>                    return false;<a name="line.702"></a>
-<FONT color="green">703</FONT>                }<a name="line.703"></a>
-<FONT color="green">704</FONT>    <a name="line.704"></a>
-<FONT color="green">705</FONT>                GroupArtifactId that = (GroupArtifactId) o;<a name="line.705"></a>
-<FONT color="green">706</FONT>    <a name="line.706"></a>
-<FONT color="green">707</FONT>                if (artifactId != null ? !artifactId.equals(that.artifactId) : that.artifactId != null) {<a name="line.707"></a>
-<FONT color="green">708</FONT>                    return false;<a name="line.708"></a>
-<FONT color="green">709</FONT>                }<a name="line.709"></a>
-<FONT color="green">710</FONT>                if (groupId != null ? !groupId.equals(that.groupId) : that.groupId != null) {<a name="line.710"></a>
-<FONT color="green">711</FONT>                    return false;<a name="line.711"></a>
-<FONT color="green">712</FONT>                }<a name="line.712"></a>
-<FONT color="green">713</FONT>    <a name="line.713"></a>
-<FONT color="green">714</FONT>                return true;<a name="line.714"></a>
-<FONT color="green">715</FONT>            }<a name="line.715"></a>
-<FONT color="green">716</FONT>    <a name="line.716"></a>
-<FONT color="green">717</FONT>            @Override<a name="line.717"></a>
-<FONT color="green">718</FONT>            public int hashCode() {<a name="line.718"></a>
-<FONT color="green">719</FONT>                int result = groupId != null ? groupId.hashCode() : 0;<a name="line.719"></a>
-<FONT color="green">720</FONT>                result = 31 * result + (artifactId != null ? artifactId.hashCode() : 0);<a name="line.720"></a>
-<FONT color="green">721</FONT>                return result;<a name="line.721"></a>
-<FONT color="green">722</FONT>            }<a name="line.722"></a>
-<FONT color="green">723</FONT>    <a name="line.723"></a>
-<FONT color="green">724</FONT>            @Override<a name="line.724"></a>
-<FONT color="green">725</FONT>            public String toString() {<a name="line.725"></a>
-<FONT color="green">726</FONT>                return getGroupId() + ":" + getArtifactId();<a name="line.726"></a>
-<FONT color="green">727</FONT>            }<a name="line.727"></a>
-<FONT color="green">728</FONT>        }<a name="line.728"></a>
-<FONT color="green">729</FONT>    <a name="line.729"></a>
-<FONT color="green">730</FONT>    }<a name="line.730"></a>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+<title>Source code</title>
+<link rel="stylesheet" type="text/css" href="../../../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<div class="sourceContainer">
+<pre><span class="sourceLineNo">001</span>package com.cloudbees.maven.plugins.autochangelog;<a name="line.1"></a>
+<span class="sourceLineNo">002</span><a name="line.2"></a>
+<span class="sourceLineNo">003</span>import com.fasterxml.jackson.core.JsonEncoding;<a name="line.3"></a>
+<span class="sourceLineNo">004</span>import com.fasterxml.jackson.core.JsonFactory;<a name="line.4"></a>
+<span class="sourceLineNo">005</span>import com.fasterxml.jackson.core.JsonGenerator;<a name="line.5"></a>
+<span class="sourceLineNo">006</span>import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;<a name="line.6"></a>
+<span class="sourceLineNo">007</span>import org.apache.maven.artifact.Artifact;<a name="line.7"></a>
+<span class="sourceLineNo">008</span>import org.apache.maven.artifact.factory.ArtifactFactory;<a name="line.8"></a>
+<span class="sourceLineNo">009</span>import org.apache.maven.artifact.metadata.ArtifactMetadataRetrievalException;<a name="line.9"></a>
+<span class="sourceLineNo">010</span>import org.apache.maven.artifact.metadata.ArtifactMetadataSource;<a name="line.10"></a>
+<span class="sourceLineNo">011</span>import org.apache.maven.artifact.repository.ArtifactRepository;<a name="line.11"></a>
+<span class="sourceLineNo">012</span>import org.apache.maven.artifact.resolver.ArtifactNotFoundException;<a name="line.12"></a>
+<span class="sourceLineNo">013</span>import org.apache.maven.artifact.resolver.ArtifactResolutionException;<a name="line.13"></a>
+<span class="sourceLineNo">014</span>import org.apache.maven.artifact.resolver.ArtifactResolver;<a name="line.14"></a>
+<span class="sourceLineNo">015</span>import org.apache.maven.artifact.versioning.ArtifactVersion;<a name="line.15"></a>
+<span class="sourceLineNo">016</span>import org.apache.maven.artifact.versioning.DefaultArtifactVersion;<a name="line.16"></a>
+<span class="sourceLineNo">017</span>import org.apache.maven.execution.MavenSession;<a name="line.17"></a>
+<span class="sourceLineNo">018</span>import org.apache.maven.model.Dependency;<a name="line.18"></a>
+<span class="sourceLineNo">019</span>import org.apache.maven.model.Plugin;<a name="line.19"></a>
+<span class="sourceLineNo">020</span>import org.apache.maven.model.building.ModelBuildingRequest;<a name="line.20"></a>
+<span class="sourceLineNo">021</span>import org.apache.maven.plugin.AbstractMojo;<a name="line.21"></a>
+<span class="sourceLineNo">022</span>import org.apache.maven.plugin.MojoExecutionException;<a name="line.22"></a>
+<span class="sourceLineNo">023</span>import org.apache.maven.plugin.MojoFailureException;<a name="line.23"></a>
+<span class="sourceLineNo">024</span>import org.apache.maven.plugins.annotations.Component;<a name="line.24"></a>
+<span class="sourceLineNo">025</span>import org.apache.maven.plugins.annotations.LifecyclePhase;<a name="line.25"></a>
+<span class="sourceLineNo">026</span>import org.apache.maven.plugins.annotations.Mojo;<a name="line.26"></a>
+<span class="sourceLineNo">027</span>import org.apache.maven.plugins.annotations.Parameter;<a name="line.27"></a>
+<span class="sourceLineNo">028</span>import org.apache.maven.project.DefaultProjectBuildingRequest;<a name="line.28"></a>
+<span class="sourceLineNo">029</span>import org.apache.maven.project.MavenProject;<a name="line.29"></a>
+<span class="sourceLineNo">030</span>import org.apache.maven.project.MavenProjectHelper;<a name="line.30"></a>
+<span class="sourceLineNo">031</span>import org.apache.maven.project.ProjectBuilder;<a name="line.31"></a>
+<span class="sourceLineNo">032</span>import org.apache.maven.project.ProjectBuildingException;<a name="line.32"></a>
+<span class="sourceLineNo">033</span>import org.apache.maven.project.ProjectBuildingRequest;<a name="line.33"></a>
+<span class="sourceLineNo">034</span>import org.apache.maven.scm.ChangeFile;<a name="line.34"></a>
+<span class="sourceLineNo">035</span>import org.apache.maven.scm.ChangeSet;<a name="line.35"></a>
+<span class="sourceLineNo">036</span>import org.apache.maven.scm.ScmException;<a name="line.36"></a>
+<span class="sourceLineNo">037</span>import org.apache.maven.scm.ScmFileSet;<a name="line.37"></a>
+<span class="sourceLineNo">038</span>import org.apache.maven.scm.ScmResult;<a name="line.38"></a>
+<span class="sourceLineNo">039</span>import org.apache.maven.scm.ScmTag;<a name="line.39"></a>
+<span class="sourceLineNo">040</span>import org.apache.maven.scm.ScmVersion;<a name="line.40"></a>
+<span class="sourceLineNo">041</span>import org.apache.maven.scm.command.changelog.ChangeLogScmResult;<a name="line.41"></a>
+<span class="sourceLineNo">042</span>import org.apache.maven.scm.command.changelog.ChangeLogSet;<a name="line.42"></a>
+<span class="sourceLineNo">043</span>import org.apache.maven.scm.manager.NoSuchScmProviderException;<a name="line.43"></a>
+<span class="sourceLineNo">044</span>import org.apache.maven.scm.manager.ScmManager;<a name="line.44"></a>
+<span class="sourceLineNo">045</span>import org.apache.maven.scm.provider.ScmProvider;<a name="line.45"></a>
+<span class="sourceLineNo">046</span>import org.apache.maven.scm.provider.ScmProviderRepository;<a name="line.46"></a>
+<span class="sourceLineNo">047</span>import org.apache.maven.scm.provider.ScmProviderRepositoryWithHost;<a name="line.47"></a>
+<span class="sourceLineNo">048</span>import org.apache.maven.scm.provider.svn.repository.SvnScmProviderRepository;<a name="line.48"></a>
+<span class="sourceLineNo">049</span>import org.apache.maven.scm.repository.ScmRepository;<a name="line.49"></a>
+<span class="sourceLineNo">050</span>import org.apache.maven.settings.Server;<a name="line.50"></a>
+<span class="sourceLineNo">051</span>import org.apache.maven.settings.Settings;<a name="line.51"></a>
+<span class="sourceLineNo">052</span>import org.codehaus.plexus.interpolation.InterpolationException;<a name="line.52"></a>
+<span class="sourceLineNo">053</span>import org.codehaus.plexus.interpolation.Interpolator;<a name="line.53"></a>
+<span class="sourceLineNo">054</span>import org.codehaus.plexus.interpolation.PrefixAwareRecursionInterceptor;<a name="line.54"></a>
+<span class="sourceLineNo">055</span>import org.codehaus.plexus.interpolation.PrefixedPropertiesValueSource;<a name="line.55"></a>
+<span class="sourceLineNo">056</span>import org.codehaus.plexus.interpolation.RecursionInterceptor;<a name="line.56"></a>
+<span class="sourceLineNo">057</span>import org.codehaus.plexus.interpolation.StringSearchInterpolator;<a name="line.57"></a>
+<span class="sourceLineNo">058</span>import org.codehaus.plexus.util.StringUtils;<a name="line.58"></a>
+<span class="sourceLineNo">059</span>import org.codehaus.plexus.util.xml.Xpp3Dom;<a name="line.59"></a>
+<span class="sourceLineNo">060</span><a name="line.60"></a>
+<span class="sourceLineNo">061</span>import java.io.File;<a name="line.61"></a>
+<span class="sourceLineNo">062</span>import java.io.IOException;<a name="line.62"></a>
+<span class="sourceLineNo">063</span>import java.text.SimpleDateFormat;<a name="line.63"></a>
+<span class="sourceLineNo">064</span>import java.util.AbstractMap;<a name="line.64"></a>
+<span class="sourceLineNo">065</span>import java.util.LinkedHashMap;<a name="line.65"></a>
+<span class="sourceLineNo">066</span>import java.util.List;<a name="line.66"></a>
+<span class="sourceLineNo">067</span>import java.util.Map;<a name="line.67"></a>
+<span class="sourceLineNo">068</span>import java.util.Properties;<a name="line.68"></a>
+<span class="sourceLineNo">069</span>import java.util.TimeZone;<a name="line.69"></a>
+<span class="sourceLineNo">070</span>import java.util.regex.Pattern;<a name="line.70"></a>
+<span class="sourceLineNo">071</span><a name="line.71"></a>
+<span class="sourceLineNo">072</span>/**<a name="line.72"></a>
+<span class="sourceLineNo">073</span> * Attaches a changelog .json as a secondary artifact to the build.<a name="line.73"></a>
+<span class="sourceLineNo">074</span> */<a name="line.74"></a>
+<span class="sourceLineNo">075</span>@Mojo(name = "attach", aggregator = true, threadSafe = true, defaultPhase = LifecyclePhase.PACKAGE)<a name="line.75"></a>
+<span class="sourceLineNo">076</span>public class AttachMojo extends AbstractMojo {<a name="line.76"></a>
+<span class="sourceLineNo">077</span><a name="line.77"></a>
+<span class="sourceLineNo">078</span>    private static final Pattern SNAPSHOT_PATTERN = Pattern.compile("(-((\\d{8}\\.\\d{6})-(\\d+))|(SNAPSHOT))$");<a name="line.78"></a>
+<span class="sourceLineNo">079</span><a name="line.79"></a>
+<span class="sourceLineNo">080</span>    /**<a name="line.80"></a>
+<span class="sourceLineNo">081</span>     * Whether to skip to automatic changelog or not.<a name="line.81"></a>
+<span class="sourceLineNo">082</span>     */<a name="line.82"></a>
+<span class="sourceLineNo">083</span>    @Parameter(property = "autochangelog.skip", defaultValue = "false")<a name="line.83"></a>
+<span class="sourceLineNo">084</span>    private boolean skip;<a name="line.84"></a>
+<span class="sourceLineNo">085</span><a name="line.85"></a>
+<span class="sourceLineNo">086</span>    /**<a name="line.86"></a>
+<span class="sourceLineNo">087</span>     * The user name (used by svn and starteam protocol).<a name="line.87"></a>
+<span class="sourceLineNo">088</span>     */<a name="line.88"></a>
+<span class="sourceLineNo">089</span>    @Parameter(property = "username")<a name="line.89"></a>
+<span class="sourceLineNo">090</span>    private String username;<a name="line.90"></a>
+<span class="sourceLineNo">091</span><a name="line.91"></a>
+<span class="sourceLineNo">092</span>    /**<a name="line.92"></a>
+<span class="sourceLineNo">093</span>     * The user password (used by svn and starteam protocol).<a name="line.93"></a>
+<span class="sourceLineNo">094</span>     */<a name="line.94"></a>
+<span class="sourceLineNo">095</span>    @Parameter(property = "password")<a name="line.95"></a>
+<span class="sourceLineNo">096</span>    private String password;<a name="line.96"></a>
+<span class="sourceLineNo">097</span><a name="line.97"></a>
+<span class="sourceLineNo">098</span>    /**<a name="line.98"></a>
+<span class="sourceLineNo">099</span>     * The private key (used by java svn).<a name="line.99"></a>
+<span class="sourceLineNo">100</span>     */<a name="line.100"></a>
+<span class="sourceLineNo">101</span>    @Parameter(property = "privateKey")<a name="line.101"></a>
+<span class="sourceLineNo">102</span>    private String privateKey;<a name="line.102"></a>
+<span class="sourceLineNo">103</span><a name="line.103"></a>
+<span class="sourceLineNo">104</span>    /**<a name="line.104"></a>
+<span class="sourceLineNo">105</span>     * The passphrase (used by java svn).<a name="line.105"></a>
+<span class="sourceLineNo">106</span>     */<a name="line.106"></a>
+<span class="sourceLineNo">107</span>    @Parameter(property = "passphrase")<a name="line.107"></a>
+<span class="sourceLineNo">108</span>    private String passphrase;<a name="line.108"></a>
+<span class="sourceLineNo">109</span><a name="line.109"></a>
+<span class="sourceLineNo">110</span>    /**<a name="line.110"></a>
+<span class="sourceLineNo">111</span>     * The url of tags base directory (used by svn protocol).<a name="line.111"></a>
+<span class="sourceLineNo">112</span>     */<a name="line.112"></a>
+<span class="sourceLineNo">113</span>    @Parameter(property = "tagBase")<a name="line.113"></a>
+<span class="sourceLineNo">114</span>    private String tagBase;<a name="line.114"></a>
+<span class="sourceLineNo">115</span><a name="line.115"></a>
+<span class="sourceLineNo">116</span>    /**<a name="line.116"></a>
+<span class="sourceLineNo">117</span>     * Allows the user to choose which scm connection to use when connecting to the scm.<a name="line.117"></a>
+<span class="sourceLineNo">118</span>     * Can either be "connection" or "developerConnection".<a name="line.118"></a>
+<span class="sourceLineNo">119</span>     */<a name="line.119"></a>
+<span class="sourceLineNo">120</span>    @Parameter(defaultValue = "connection", required = true)<a name="line.120"></a>
+<span class="sourceLineNo">121</span>    private String connectionType;<a name="line.121"></a>
+<span class="sourceLineNo">122</span><a name="line.122"></a>
+<span class="sourceLineNo">123</span>    @Parameter(property = "project.build.outputEncoding")<a name="line.123"></a>
+<span class="sourceLineNo">124</span>    private String encoding;<a name="line.124"></a>
+<span class="sourceLineNo">125</span><a name="line.125"></a>
+<span class="sourceLineNo">126</span>    /**<a name="line.126"></a>
+<span class="sourceLineNo">127</span>     * Directory to create the changes.json file.<a name="line.127"></a>
+<span class="sourceLineNo">128</span>     */<a name="line.128"></a>
+<span class="sourceLineNo">129</span>    @Parameter(property = "project.build.directory")<a name="line.129"></a>
+<span class="sourceLineNo">130</span>    private File outputDirectory;<a name="line.130"></a>
+<span class="sourceLineNo">131</span><a name="line.131"></a>
+<span class="sourceLineNo">132</span>    @Parameter(property = "project.build.finalName")<a name="line.132"></a>
+<span class="sourceLineNo">133</span>    private String finalName;<a name="line.133"></a>
+<span class="sourceLineNo">134</span><a name="line.134"></a>
+<span class="sourceLineNo">135</span>    @Parameter(property = "project.basedir", readonly = true, required = true)<a name="line.135"></a>
+<span class="sourceLineNo">136</span>    private File basedir;<a name="line.136"></a>
+<span class="sourceLineNo">137</span><a name="line.137"></a>
+<span class="sourceLineNo">138</span>    @Parameter(property = "settings", readonly = true, required = true)<a name="line.138"></a>
+<span class="sourceLineNo">139</span>    private Settings settings;<a name="line.139"></a>
+<span class="sourceLineNo">140</span><a name="line.140"></a>
+<span class="sourceLineNo">141</span>    @Parameter(property = "project", readonly = true, required = true)<a name="line.141"></a>
+<span class="sourceLineNo">142</span>    private MavenProject project;<a name="line.142"></a>
+<span class="sourceLineNo">143</span><a name="line.143"></a>
+<span class="sourceLineNo">144</span>    @Parameter(property = "localRepository", readonly = true, required = true)<a name="line.144"></a>
+<span class="sourceLineNo">145</span>    private ArtifactRepository localRepository;<a name="line.145"></a>
+<span class="sourceLineNo">146</span><a name="line.146"></a>
+<span class="sourceLineNo">147</span>    @Parameter(property = "session", readonly = true, required = true)<a name="line.147"></a>
+<span class="sourceLineNo">148</span>    private MavenSession session;<a name="line.148"></a>
+<span class="sourceLineNo">149</span><a name="line.149"></a>
+<span class="sourceLineNo">150</span>    @Parameter(property = "autochangelog.previousVersion", required = false)<a name="line.150"></a>
+<span class="sourceLineNo">151</span>    private String previousVersion;<a name="line.151"></a>
+<span class="sourceLineNo">152</span><a name="line.152"></a>
+<span class="sourceLineNo">153</span>    @Component<a name="line.153"></a>
+<span class="sourceLineNo">154</span>    private ArtifactMetadataSource artifactMetadataSource;<a name="line.154"></a>
+<span class="sourceLineNo">155</span><a name="line.155"></a>
+<span class="sourceLineNo">156</span>    @Component<a name="line.156"></a>
+<span class="sourceLineNo">157</span>    private ArtifactFactory artifactFactory;<a name="line.157"></a>
+<span class="sourceLineNo">158</span><a name="line.158"></a>
+<span class="sourceLineNo">159</span>    @Component<a name="line.159"></a>
+<span class="sourceLineNo">160</span>    private ProjectBuilder projectBuilder;<a name="line.160"></a>
+<span class="sourceLineNo">161</span><a name="line.161"></a>
+<span class="sourceLineNo">162</span>    @Component<a name="line.162"></a>
+<span class="sourceLineNo">163</span>    private ScmManager manager;<a name="line.163"></a>
+<span class="sourceLineNo">164</span><a name="line.164"></a>
+<span class="sourceLineNo">165</span>    @Component<a name="line.165"></a>
+<span class="sourceLineNo">166</span>    private MavenProjectHelper projectHelper;<a name="line.166"></a>
+<span class="sourceLineNo">167</span><a name="line.167"></a>
+<span class="sourceLineNo">168</span>    @Component<a name="line.168"></a>
+<span class="sourceLineNo">169</span>    private ArtifactResolver artifactResolver;<a name="line.169"></a>
+<span class="sourceLineNo">170</span><a name="line.170"></a>
+<span class="sourceLineNo">171</span>    private String connection = null;<a name="line.171"></a>
+<span class="sourceLineNo">172</span><a name="line.172"></a>
+<span class="sourceLineNo">173</span>    public void execute() throws MojoExecutionException, MojoFailureException {<a name="line.173"></a>
+<span class="sourceLineNo">174</span>        if (skip) {<a name="line.174"></a>
+<span class="sourceLineNo">175</span>            getLog().info("Execution is skipped.");<a name="line.175"></a>
+<span class="sourceLineNo">176</span>            return;<a name="line.176"></a>
+<span class="sourceLineNo">177</span>        }<a name="line.177"></a>
+<span class="sourceLineNo">178</span>        if (previousVersion == null) {<a name="line.178"></a>
+<span class="sourceLineNo">179</span>        getLog().debug("Looking for previous release of " + project.getGroupId() + ":" + project.getArtifactId() + ":"<a name="line.179"></a>
+<span class="sourceLineNo">180</span>                + project.getVersion());<a name="line.180"></a>
+<span class="sourceLineNo">181</span>        Artifact projectArtifact = artifactFactory<a name="line.181"></a>
+<span class="sourceLineNo">182</span>                .createProjectArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion());<a name="line.182"></a>
+<span class="sourceLineNo">183</span>        ArtifactVersion projectVersion = new DefaultArtifactVersion(project.getVersion());<a name="line.183"></a>
+<span class="sourceLineNo">184</span><a name="line.184"></a>
+<span class="sourceLineNo">185</span>        ArtifactVersion latest = null;<a name="line.185"></a>
+<span class="sourceLineNo">186</span>        try {<a name="line.186"></a>
+<span class="sourceLineNo">187</span>            List&lt;ArtifactVersion&gt; artifactVersions = artifactMetadataSource<a name="line.187"></a>
+<span class="sourceLineNo">188</span>                    .retrieveAvailableVersions(projectArtifact, localRepository,<a name="line.188"></a>
+<span class="sourceLineNo">189</span>                            project.getRemoteArtifactRepositories());<a name="line.189"></a>
+<span class="sourceLineNo">190</span>            for (ArtifactVersion version : artifactVersions) {<a name="line.190"></a>
+<span class="sourceLineNo">191</span>                if (SNAPSHOT_PATTERN.matcher(version.toString()).find() || projectVersion.compareTo(version) &lt;= 0) {<a name="line.191"></a>
+<span class="sourceLineNo">192</span>                    continue;<a name="line.192"></a>
+<span class="sourceLineNo">193</span>                }<a name="line.193"></a>
+<span class="sourceLineNo">194</span>                if (latest == null || latest.compareTo(version) &lt; 0) {<a name="line.194"></a>
+<span class="sourceLineNo">195</span>                    latest = version;<a name="line.195"></a>
+<span class="sourceLineNo">196</span>                }<a name="line.196"></a>
+<span class="sourceLineNo">197</span>            }<a name="line.197"></a>
+<span class="sourceLineNo">198</span>        } catch (ArtifactMetadataRetrievalException e) {<a name="line.198"></a>
+<span class="sourceLineNo">199</span>            throw new MojoExecutionException(e.getMessage(), e);<a name="line.199"></a>
+<span class="sourceLineNo">200</span>        }<a name="line.200"></a>
+<span class="sourceLineNo">201</span>        getLog().debug("Previous release = " + latest);<a name="line.201"></a>
+<span class="sourceLineNo">202</span>            previousVersion = latest == null ? null : latest.toString();<a name="line.202"></a>
+<span class="sourceLineNo">203</span>        }<a name="line.203"></a>
+<span class="sourceLineNo">204</span><a name="line.204"></a>
+<span class="sourceLineNo">205</span>        Map&lt;GroupArtifactId, String&gt; addedDeps = new LinkedHashMap&lt;GroupArtifactId, String&gt;();<a name="line.205"></a>
+<span class="sourceLineNo">206</span>        Map&lt;GroupArtifactId, String&gt; removedDeps = new LinkedHashMap&lt;GroupArtifactId, String&gt;();<a name="line.206"></a>
+<span class="sourceLineNo">207</span>        Map&lt;GroupArtifactId, String&gt; unchangedDeps = new LinkedHashMap&lt;GroupArtifactId, String&gt;();<a name="line.207"></a>
+<span class="sourceLineNo">208</span>        Map&lt;GroupArtifactId, Map.Entry&lt;String, String&gt;&gt; updatedDeps =<a name="line.208"></a>
+<span class="sourceLineNo">209</span>                new LinkedHashMap&lt;GroupArtifactId, Map.Entry&lt;String, String&gt;&gt;();<a name="line.209"></a>
+<span class="sourceLineNo">210</span><a name="line.210"></a>
+<span class="sourceLineNo">211</span>        for (Dependency dep : project.getDependencies()) {<a name="line.211"></a>
+<span class="sourceLineNo">212</span>            addedDeps.put(new GroupArtifactId(dep), dep.getVersion());<a name="line.212"></a>
+<span class="sourceLineNo">213</span>        }<a name="line.213"></a>
+<span class="sourceLineNo">214</span><a name="line.214"></a>
+<span class="sourceLineNo">215</span>        String startTag = null;<a name="line.215"></a>
+<span class="sourceLineNo">216</span>        String endTag = null;<a name="line.216"></a>
+<span class="sourceLineNo">217</span>        if (previousVersion != null) {<a name="line.217"></a>
+<span class="sourceLineNo">218</span>            Artifact latestArtifact = artifactFactory<a name="line.218"></a>
+<span class="sourceLineNo">219</span>                    .createProjectArtifact(project.getGroupId(), project.getArtifactId(), previousVersion);<a name="line.219"></a>
+<span class="sourceLineNo">220</span>            try {<a name="line.220"></a>
+<span class="sourceLineNo">221</span>                artifactResolver.resolve(latestArtifact, project.getRemoteArtifactRepositories(), localRepository);<a name="line.221"></a>
+<span class="sourceLineNo">222</span>            } catch (ArtifactResolutionException e) {<a name="line.222"></a>
+<span class="sourceLineNo">223</span>                throw new MojoExecutionException(e.getMessage(), e);<a name="line.223"></a>
+<span class="sourceLineNo">224</span>            } catch (ArtifactNotFoundException e) {<a name="line.224"></a>
+<span class="sourceLineNo">225</span>                throw new MojoExecutionException(e.getMessage(), e);<a name="line.225"></a>
+<span class="sourceLineNo">226</span>            }<a name="line.226"></a>
+<span class="sourceLineNo">227</span><a name="line.227"></a>
+<span class="sourceLineNo">228</span>            ProjectBuildingRequest request = new DefaultProjectBuildingRequest();<a name="line.228"></a>
+<span class="sourceLineNo">229</span><a name="line.229"></a>
+<span class="sourceLineNo">230</span>            request.setProcessPlugins(true);<a name="line.230"></a>
+<span class="sourceLineNo">231</span>            request.setProfiles(request.getProfiles());<a name="line.231"></a>
+<span class="sourceLineNo">232</span>            request.setActiveProfileIds(session.getRequest().getActiveProfiles());<a name="line.232"></a>
+<span class="sourceLineNo">233</span>            request.setInactiveProfileIds(session.getRequest().getInactiveProfiles());<a name="line.233"></a>
+<span class="sourceLineNo">234</span>            request.setRemoteRepositories(session.getRequest().getRemoteRepositories());<a name="line.234"></a>
+<span class="sourceLineNo">235</span>            request.setSystemProperties(session.getSystemProperties());<a name="line.235"></a>
+<span class="sourceLineNo">236</span>            request.setUserProperties(session.getUserProperties());<a name="line.236"></a>
+<span class="sourceLineNo">237</span>            request.setRemoteRepositories(session.getRequest().getRemoteRepositories());<a name="line.237"></a>
+<span class="sourceLineNo">238</span>            request.setPluginArtifactRepositories(session.getRequest().getPluginArtifactRepositories());<a name="line.238"></a>
+<span class="sourceLineNo">239</span>            request.setRepositorySession(session.getRepositorySession());<a name="line.239"></a>
+<span class="sourceLineNo">240</span>            request.setLocalRepository(localRepository);<a name="line.240"></a>
+<span class="sourceLineNo">241</span>            request.setBuildStartTime(session.getRequest().getStartTime());<a name="line.241"></a>
+<span class="sourceLineNo">242</span>            request.setResolveDependencies(true);<a name="line.242"></a>
+<span class="sourceLineNo">243</span>            request.setValidationLevel(ModelBuildingRequest.VALIDATION_LEVEL_STRICT);<a name="line.243"></a>
+<span class="sourceLineNo">244</span>            MavenProject latestProject;<a name="line.244"></a>
+<span class="sourceLineNo">245</span>            try {<a name="line.245"></a>
+<span class="sourceLineNo">246</span>                latestProject = projectBuilder.build(latestArtifact.getFile(), request).getProject();<a name="line.246"></a>
+<span class="sourceLineNo">247</span>            } catch (ProjectBuildingException e) {<a name="line.247"></a>
+<span class="sourceLineNo">248</span>                throw new MojoExecutionException(e.getMessage(), e);<a name="line.248"></a>
+<span class="sourceLineNo">249</span>            }<a name="line.249"></a>
+<span class="sourceLineNo">250</span>            for (Dependency dep : latestProject.getDependencies()) {<a name="line.250"></a>
+<span class="sourceLineNo">251</span>                GroupArtifactId key = new GroupArtifactId(dep);<a name="line.251"></a>
+<span class="sourceLineNo">252</span>                if (addedDeps.containsKey(key)) {<a name="line.252"></a>
+<span class="sourceLineNo">253</span>                    String v = addedDeps.get(key);<a name="line.253"></a>
+<span class="sourceLineNo">254</span>                    addedDeps.remove(key);<a name="line.254"></a>
+<span class="sourceLineNo">255</span>                    if (!v.equals(dep.getVersion())) {<a name="line.255"></a>
+<span class="sourceLineNo">256</span>                        updatedDeps.put(key, new AbstractMap.SimpleImmutableEntry&lt;String, String&gt;(dep.getVersion(), v));<a name="line.256"></a>
+<span class="sourceLineNo">257</span>                    } else {<a name="line.257"></a>
+<span class="sourceLineNo">258</span>                        unchangedDeps.put(key, v);<a name="line.258"></a>
+<span class="sourceLineNo">259</span>                    }<a name="line.259"></a>
+<span class="sourceLineNo">260</span>                } else if (updatedDeps.containsKey(key)) {<a name="line.260"></a>
+<span class="sourceLineNo">261</span>                    String v = updatedDeps.get(key).getValue();<a name="line.261"></a>
+<span class="sourceLineNo">262</span>                    if (!v.equals(dep.getVersion())) {<a name="line.262"></a>
+<span class="sourceLineNo">263</span>                        updatedDeps.remove(key);<a name="line.263"></a>
+<span class="sourceLineNo">264</span>                        addedDeps.put(key, v);<a name="line.264"></a>
+<span class="sourceLineNo">265</span>                    } else {<a name="line.265"></a>
+<span class="sourceLineNo">266</span>                        updatedDeps.put(key, new AbstractMap.SimpleImmutableEntry&lt;String, String&gt;(dep.getVersion(), v));<a name="line.266"></a>
+<span class="sourceLineNo">267</span>                    }<a name="line.267"></a>
+<span class="sourceLineNo">268</span>                } else {<a name="line.268"></a>
+<span class="sourceLineNo">269</span>                    removedDeps.put(key, dep.getVersion());<a name="line.269"></a>
+<span class="sourceLineNo">270</span>                }<a name="line.270"></a>
+<span class="sourceLineNo">271</span>            }<a name="line.271"></a>
+<span class="sourceLineNo">272</span><a name="line.272"></a>
+<span class="sourceLineNo">273</span>            String tagNameFormat = getTagNameFormat(latestProject);<a name="line.273"></a>
+<span class="sourceLineNo">274</span>            getLog().debug("Start Tag name format = " + tagNameFormat);<a name="line.274"></a>
+<span class="sourceLineNo">275</span>            Interpolator interpolator = new StringSearchInterpolator("@{", "}");<a name="line.275"></a>
+<span class="sourceLineNo">276</span>            List&lt;String&gt; possiblePrefixes = java.util.Arrays.asList("project", "pom");<a name="line.276"></a>
+<span class="sourceLineNo">277</span>            Properties values = new Properties();<a name="line.277"></a>
+<span class="sourceLineNo">278</span>            values.setProperty("artifactId", project.getArtifactId());<a name="line.278"></a>
+<span class="sourceLineNo">279</span>            values.setProperty("groupId", project.getGroupId());<a name="line.279"></a>
+<span class="sourceLineNo">280</span>            values.setProperty("version", previousVersion);<a name="line.280"></a>
+<span class="sourceLineNo">281</span>            interpolator.addValueSource(new PrefixedPropertiesValueSource(possiblePrefixes, values, true));<a name="line.281"></a>
+<span class="sourceLineNo">282</span>            RecursionInterceptor recursionInterceptor = new PrefixAwareRecursionInterceptor(possiblePrefixes);<a name="line.282"></a>
+<span class="sourceLineNo">283</span>            try {<a name="line.283"></a>
+<span class="sourceLineNo">284</span>                startTag = interpolator.interpolate(tagNameFormat, recursionInterceptor);<a name="line.284"></a>
+<span class="sourceLineNo">285</span>            } catch (InterpolationException e) {<a name="line.285"></a>
+<span class="sourceLineNo">286</span>                throw new MojoExecutionException("Could not interpolate specified tag name format: " + tagNameFormat,<a name="line.286"></a>
+<span class="sourceLineNo">287</span>                        e);<a name="line.287"></a>
+<span class="sourceLineNo">288</span>            }<a name="line.288"></a>
+<span class="sourceLineNo">289</span>        }<a name="line.289"></a>
+<span class="sourceLineNo">290</span>        if (!SNAPSHOT_PATTERN.matcher(project.getVersion()).find()) {<a name="line.290"></a>
+<span class="sourceLineNo">291</span>            String tagNameFormat = getTagNameFormat(project);<a name="line.291"></a>
+<span class="sourceLineNo">292</span>            getLog().debug("End Tag name format = " + tagNameFormat);<a name="line.292"></a>
+<span class="sourceLineNo">293</span>            Interpolator interpolator = new StringSearchInterpolator("@{", "}");<a name="line.293"></a>
+<span class="sourceLineNo">294</span>            List&lt;String&gt; possiblePrefixes = java.util.Arrays.asList("project", "pom");<a name="line.294"></a>
+<span class="sourceLineNo">295</span>            Properties values = new Properties();<a name="line.295"></a>
+<span class="sourceLineNo">296</span>            values.setProperty("artifactId", project.getArtifactId());<a name="line.296"></a>
+<span class="sourceLineNo">297</span>            values.setProperty("groupId", project.getGroupId());<a name="line.297"></a>
+<span class="sourceLineNo">298</span>            values.setProperty("version", project.getVersion());<a name="line.298"></a>
+<span class="sourceLineNo">299</span>            interpolator.addValueSource(new PrefixedPropertiesValueSource(possiblePrefixes, values, true));<a name="line.299"></a>
+<span class="sourceLineNo">300</span>            RecursionInterceptor recursionInterceptor = new PrefixAwareRecursionInterceptor(possiblePrefixes);<a name="line.300"></a>
+<span class="sourceLineNo">301</span>            try {<a name="line.301"></a>
+<span class="sourceLineNo">302</span>                endTag = interpolator.interpolate(tagNameFormat, recursionInterceptor);<a name="line.302"></a>
+<span class="sourceLineNo">303</span>            } catch (InterpolationException e) {<a name="line.303"></a>
+<span class="sourceLineNo">304</span>                throw new MojoExecutionException("Could not interpolate specified tag name format: " + tagNameFormat,<a name="line.304"></a>
+<span class="sourceLineNo">305</span>                        e);<a name="line.305"></a>
+<span class="sourceLineNo">306</span>            }<a name="line.306"></a>
+<span class="sourceLineNo">307</span>        }<a name="line.307"></a>
+<span class="sourceLineNo">308</span>        getLog().info("Start tag = " + startTag);<a name="line.308"></a>
+<span class="sourceLineNo">309</span>        getLog().info("End tag = " + endTag);<a name="line.309"></a>
+<span class="sourceLineNo">310</span><a name="line.310"></a>
+<span class="sourceLineNo">311</span>        ChangeLogSet changeLog = null;<a name="line.311"></a>
+<span class="sourceLineNo">312</span><a name="line.312"></a>
+<span class="sourceLineNo">313</span>        ScmRepository repository;<a name="line.313"></a>
+<span class="sourceLineNo">314</span>        try {<a name="line.314"></a>
+<span class="sourceLineNo">315</span>            repository = getScmRepository();<a name="line.315"></a>
+<span class="sourceLineNo">316</span>            ScmProvider provider = null;<a name="line.316"></a>
+<span class="sourceLineNo">317</span>            try {<a name="line.317"></a>
+<span class="sourceLineNo">318</span>                provider = manager.getProviderByRepository(repository);<a name="line.318"></a>
+<span class="sourceLineNo">319</span>            } catch (NoSuchScmProviderException e) {<a name="line.319"></a>
+<span class="sourceLineNo">320</span>                throw new MojoExecutionException("Unknown/unsupported SCM provider", e);<a name="line.320"></a>
+<span class="sourceLineNo">321</span>            }<a name="line.321"></a>
+<span class="sourceLineNo">322</span><a name="line.322"></a>
+<span class="sourceLineNo">323</span>            ScmVersion scmStartVersion;<a name="line.323"></a>
+<span class="sourceLineNo">324</span>            ScmVersion scmEndVersion;<a name="line.324"></a>
+<span class="sourceLineNo">325</span>            if (repository.getProvider().equals("svn")) {<a name="line.325"></a>
+<span class="sourceLineNo">326</span>                getLog().warn("SVN does not support the required changelog operations");<a name="line.326"></a>
+<span class="sourceLineNo">327</span>            } else {<a name="line.327"></a>
+<span class="sourceLineNo">328</span>                scmStartVersion = startTag == null ? null : new ScmTag(startTag);<a name="line.328"></a>
+<span class="sourceLineNo">329</span>                scmEndVersion = endTag == null ? null : new ScmTag(endTag);<a name="line.329"></a>
+<span class="sourceLineNo">330</span>                ChangeLogScmResult changeLogScmResult;<a name="line.330"></a>
+<span class="sourceLineNo">331</span>                try {<a name="line.331"></a>
+<span class="sourceLineNo">332</span>                    changeLogScmResult =<a name="line.332"></a>
+<span class="sourceLineNo">333</span>                            provider.changeLog(repository, new ScmFileSet(basedir), scmStartVersion, scmEndVersion);<a name="line.333"></a>
+<span class="sourceLineNo">334</span>                } catch (ScmException e) {<a name="line.334"></a>
+<span class="sourceLineNo">335</span>                    throw new MojoExecutionException("Could not fetch changelog", e);<a name="line.335"></a>
+<span class="sourceLineNo">336</span>                }<a name="line.336"></a>
+<span class="sourceLineNo">337</span>                checkResult(changeLogScmResult);<a name="line.337"></a>
+<span class="sourceLineNo">338</span><a name="line.338"></a>
+<span class="sourceLineNo">339</span>                changeLog = changeLogScmResult.getChangeLog();<a name="line.339"></a>
+<span class="sourceLineNo">340</span>            }<a name="line.340"></a>
+<span class="sourceLineNo">341</span>        } catch (ScmException e) {<a name="line.341"></a>
+<span class="sourceLineNo">342</span>            getLog().error("Could not get SCM repository", e);<a name="line.342"></a>
+<span class="sourceLineNo">343</span>        }<a name="line.343"></a>
+<span class="sourceLineNo">344</span><a name="line.344"></a>
+<span class="sourceLineNo">345</span>        if (StringUtils.isEmpty(encoding)) {<a name="line.345"></a>
+<span class="sourceLineNo">346</span>            getLog().warn("Output file encoding has not been set, using platform encoding " + System<a name="line.346"></a>
+<span class="sourceLineNo">347</span>                    .getProperty("file.encoding") + ", i.e. build is platform dependent!");<a name="line.347"></a>
+<span class="sourceLineNo">348</span>            encoding = System.getProperty("file.encoding");<a name="line.348"></a>
+<span class="sourceLineNo">349</span>        }<a name="line.349"></a>
+<span class="sourceLineNo">350</span><a name="line.350"></a>
+<span class="sourceLineNo">351</span>        if (!outputDirectory.isDirectory() &amp;&amp; !outputDirectory.mkdirs()) {<a name="line.351"></a>
+<span class="sourceLineNo">352</span>            throw new MojoExecutionException("Could not create directory " + outputDirectory);<a name="line.352"></a>
+<span class="sourceLineNo">353</span>        }<a name="line.353"></a>
+<span class="sourceLineNo">354</span><a name="line.354"></a>
+<span class="sourceLineNo">355</span>        File outputFile = new File(outputDirectory, finalName + "-changes.json");<a name="line.355"></a>
+<span class="sourceLineNo">356</span><a name="line.356"></a>
+<span class="sourceLineNo">357</span>        JsonFactory factory = new JsonFactory();<a name="line.357"></a>
+<span class="sourceLineNo">358</span>        try {<a name="line.358"></a>
+<span class="sourceLineNo">359</span>            JsonGenerator generator = factory.createJsonGenerator(outputFile, JsonEncoding.UTF8);<a name="line.359"></a>
+<span class="sourceLineNo">360</span>            generator.setPrettyPrinter(new DefaultPrettyPrinter());<a name="line.360"></a>
+<span class="sourceLineNo">361</span>            try {<a name="line.361"></a>
+<span class="sourceLineNo">362</span>                generator.writeStartObject();<a name="line.362"></a>
+<span class="sourceLineNo">363</span>                generator.writeStringField("previousVersion", previousVersion);<a name="line.363"></a>
+<span class="sourceLineNo">364</span>                generator.writeFieldName("dependencies");<a name="line.364"></a>
+<span class="sourceLineNo">365</span>                writeDependenciesDelta(addedDeps, removedDeps, updatedDeps, unchangedDeps, generator);<a name="line.365"></a>
+<span class="sourceLineNo">366</span>                if (changeLog != null) {<a name="line.366"></a>
+<span class="sourceLineNo">367</span>                    generator.writeFieldName("scm");<a name="line.367"></a>
+<span class="sourceLineNo">368</span>                    writeChangeLog(generator, changeLog);<a name="line.368"></a>
+<span class="sourceLineNo">369</span>                }<a name="line.369"></a>
+<span class="sourceLineNo">370</span>                generator.writeEndObject();<a name="line.370"></a>
+<span class="sourceLineNo">371</span>            } finally {<a name="line.371"></a>
+<span class="sourceLineNo">372</span>                generator.close();<a name="line.372"></a>
+<span class="sourceLineNo">373</span>            }<a name="line.373"></a>
+<span class="sourceLineNo">374</span>        } catch (IOException e) {<a name="line.374"></a>
+<span class="sourceLineNo">375</span>            throw new MojoExecutionException(e.getMessage(), e);<a name="line.375"></a>
+<span class="sourceLineNo">376</span>        }<a name="line.376"></a>
+<span class="sourceLineNo">377</span>        projectHelper.attachArtifact(project, "json", "changes", outputFile);<a name="line.377"></a>
+<span class="sourceLineNo">378</span>    }<a name="line.378"></a>
+<span class="sourceLineNo">379</span><a name="line.379"></a>
+<span class="sourceLineNo">380</span>    private void writeDependenciesDelta(Map&lt;GroupArtifactId, String&gt; addedDeps,<a name="line.380"></a>
+<span class="sourceLineNo">381</span>                                        Map&lt;GroupArtifactId, String&gt; removedDeps,<a name="line.381"></a>
+<span class="sourceLineNo">382</span>                                        Map&lt;GroupArtifactId, Map.Entry&lt;String, String&gt;&gt; updatedDeps,<a name="line.382"></a>
+<span class="sourceLineNo">383</span>                                        Map&lt;GroupArtifactId, String&gt; unchangedDeps,<a name="line.383"></a>
+<span class="sourceLineNo">384</span>                                        JsonGenerator generator) throws IOException {<a name="line.384"></a>
+<span class="sourceLineNo">385</span>        generator.writeStartObject();<a name="line.385"></a>
+<span class="sourceLineNo">386</span>        if (!addedDeps.isEmpty()) {<a name="line.386"></a>
+<span class="sourceLineNo">387</span>            generator.writeArrayFieldStart("added");<a name="line.387"></a>
+<span class="sourceLineNo">388</span>            for (Map.Entry&lt;GroupArtifactId, String&gt; e : addedDeps.entrySet()) {<a name="line.388"></a>
+<span class="sourceLineNo">389</span>                generator.writeStartObject();<a name="line.389"></a>
+<span class="sourceLineNo">390</span>                generator.writeStringField("groupId", e.getKey().getGroupId());<a name="line.390"></a>
+<span class="sourceLineNo">391</span>                generator.writeStringField("artifactId", e.getKey().getArtifactId());<a name="line.391"></a>
+<span class="sourceLineNo">392</span>                generator.writeStringField("version", e.getValue());<a name="line.392"></a>
+<span class="sourceLineNo">393</span>                generator.writeEndObject();<a name="line.393"></a>
+<span class="sourceLineNo">394</span>            }<a name="line.394"></a>
+<span class="sourceLineNo">395</span>            generator.writeEndArray();<a name="line.395"></a>
+<span class="sourceLineNo">396</span>        }<a name="line.396"></a>
+<span class="sourceLineNo">397</span>        if (!removedDeps.isEmpty()) {<a name="line.397"></a>
+<span class="sourceLineNo">398</span>            generator.writeArrayFieldStart("removed");<a name="line.398"></a>
+<span class="sourceLineNo">399</span>            for (Map.Entry&lt;GroupArtifactId, String&gt; e : removedDeps.entrySet()) {<a name="line.399"></a>
+<span class="sourceLineNo">400</span>                generator.writeStartObject();<a name="line.400"></a>
+<span class="sourceLineNo">401</span>                generator.writeStringField("groupId", e.getKey().getGroupId());<a name="line.401"></a>
+<span class="sourceLineNo">402</span>                generator.writeStringField("artifactId", e.getKey().getArtifactId());<a name="line.402"></a>
+<span class="sourceLineNo">403</span>                generator.writeStringField("version", e.getValue());<a name="line.403"></a>
+<span class="sourceLineNo">404</span>                generator.writeEndObject();<a name="line.404"></a>
+<span class="sourceLineNo">405</span>            }<a name="line.405"></a>
+<span class="sourceLineNo">406</span>            generator.writeEndArray();<a name="line.406"></a>
+<span class="sourceLineNo">407</span>        }<a name="line.407"></a>
+<span class="sourceLineNo">408</span>        if (!updatedDeps.isEmpty()) {<a name="line.408"></a>
+<span class="sourceLineNo">409</span>            generator.writeArrayFieldStart("updated");<a name="line.409"></a>
+<span class="sourceLineNo">410</span>            for (Map.Entry&lt;GroupArtifactId, Map.Entry&lt;String, String&gt;&gt; e : updatedDeps.entrySet()) {<a name="line.410"></a>
+<span class="sourceLineNo">411</span>                generator.writeStartObject();<a name="line.411"></a>
+<span class="sourceLineNo">412</span>                generator.writeStringField("groupId", e.getKey().getGroupId());<a name="line.412"></a>
+<span class="sourceLineNo">413</span>                generator.writeStringField("artifactId", e.getKey().getArtifactId());<a name="line.413"></a>
+<span class="sourceLineNo">414</span>                generator.writeStringField("version", e.getValue().getValue());<a name="line.414"></a>
+<span class="sourceLineNo">415</span>                generator.writeStringField("originalVersion", e.getValue().getKey());<a name="line.415"></a>
+<span class="sourceLineNo">416</span>                generator.writeEndObject();<a name="line.416"></a>
+<span class="sourceLineNo">417</span>            }<a name="line.417"></a>
+<span class="sourceLineNo">418</span>            generator.writeEndArray();<a name="line.418"></a>
+<span class="sourceLineNo">419</span>        }<a name="line.419"></a>
+<span class="sourceLineNo">420</span>        if (!unchangedDeps.isEmpty()) {<a name="line.420"></a>
+<span class="sourceLineNo">421</span>            generator.writeArrayFieldStart("unchanged");<a name="line.421"></a>
+<span class="sourceLineNo">422</span>            for (Map.Entry&lt;GroupArtifactId, String&gt; e : unchangedDeps.entrySet()) {<a name="line.422"></a>
+<span class="sourceLineNo">423</span>                generator.writeStartObject();<a name="line.423"></a>
+<span class="sourceLineNo">424</span>                generator.writeStringField("groupId", e.getKey().getGroupId());<a name="line.424"></a>
+<span class="sourceLineNo">425</span>                generator.writeStringField("artifactId", e.getKey().getArtifactId());<a name="line.425"></a>
+<span class="sourceLineNo">426</span>                generator.writeStringField("version", e.getValue());<a name="line.426"></a>
+<span class="sourceLineNo">427</span>                generator.writeEndObject();<a name="line.427"></a>
+<span class="sourceLineNo">428</span>            }<a name="line.428"></a>
+<span class="sourceLineNo">429</span>            generator.writeEndArray();<a name="line.429"></a>
+<span class="sourceLineNo">430</span>        }<a name="line.430"></a>
+<span class="sourceLineNo">431</span>        generator.writeEndObject();<a name="line.431"></a>
+<span class="sourceLineNo">432</span>    }<a name="line.432"></a>
+<span class="sourceLineNo">433</span><a name="line.433"></a>
+<span class="sourceLineNo">434</span>    private String getTagNameFormat(MavenProject project) {<a name="line.434"></a>
+<span class="sourceLineNo">435</span>        Plugin releasePlugin = null;<a name="line.435"></a>
+<span class="sourceLineNo">436</span>        for (Plugin plugin : project.getBuild().getPlugins()) {<a name="line.436"></a>
+<span class="sourceLineNo">437</span>            if ("org.apache.maven.plugins".equals(plugin.getGroupId()) &amp;&amp; "maven-release-plugin"<a name="line.437"></a>
+<span class="sourceLineNo">438</span>                    .equals(plugin.getArtifactId())) {<a name="line.438"></a>
+<span class="sourceLineNo">439</span>                releasePlugin = plugin;<a name="line.439"></a>
+<span class="sourceLineNo">440</span>                break;<a name="line.440"></a>
+<span class="sourceLineNo">441</span>            }<a name="line.441"></a>
+<span class="sourceLineNo">442</span>        }<a name="line.442"></a>
+<span class="sourceLineNo">443</span>        String tagNameFormat = "@{project.artifactId}-@{project.version}";<a name="line.443"></a>
+<span class="sourceLineNo">444</span>        if (releasePlugin != null) {<a name="line.444"></a>
+<span class="sourceLineNo">445</span>            Xpp3Dom dom = (Xpp3Dom) releasePlugin.getConfiguration();<a name="line.445"></a>
+<span class="sourceLineNo">446</span>            Xpp3Dom tagNameFormatDom = dom.getChild("tagNameFormat");<a name="line.446"></a>
+<span class="sourceLineNo">447</span>            if (tagNameFormatDom != null) {<a name="line.447"></a>
+<span class="sourceLineNo">448</span>                tagNameFormat = tagNameFormatDom.getValue();<a name="line.448"></a>
+<span class="sourceLineNo">449</span>            }<a name="line.449"></a>
+<span class="sourceLineNo">450</span>        }<a name="line.450"></a>
+<span class="sourceLineNo">451</span>        return tagNameFormat;<a name="line.451"></a>
+<span class="sourceLineNo">452</span>    }<a name="line.452"></a>
+<span class="sourceLineNo">453</span><a name="line.453"></a>
+<span class="sourceLineNo">454</span>    private void writeChangeLog(JsonGenerator generator, ChangeLogSet changeLog) throws IOException {<a name="line.454"></a>
+<span class="sourceLineNo">455</span>        generator.writeStartArray();<a name="line.455"></a>
+<span class="sourceLineNo">456</span>        try {<a name="line.456"></a>
+<span class="sourceLineNo">457</span>            for (ChangeSet changeSet : changeLog.getChangeSets()) {<a name="line.457"></a>
+<span class="sourceLineNo">458</span>                writeChangeSet(generator, changeSet);<a name="line.458"></a>
+<span class="sourceLineNo">459</span>            }<a name="line.459"></a>
+<span class="sourceLineNo">460</span>        } finally {<a name="line.460"></a>
+<span class="sourceLineNo">461</span>            generator.writeEndArray();<a name="line.461"></a>
+<span class="sourceLineNo">462</span>        }<a name="line.462"></a>
+<span class="sourceLineNo">463</span>    }<a name="line.463"></a>
+<span class="sourceLineNo">464</span><a name="line.464"></a>
+<span class="sourceLineNo">465</span>    private void writeChangeSet(JsonGenerator generator, ChangeSet changeSet) throws IOException {<a name="line.465"></a>
+<span class="sourceLineNo">466</span>        generator.writeStartObject();<a name="line.466"></a>
+<span class="sourceLineNo">467</span>        try {<a name="line.467"></a>
+<span class="sourceLineNo">468</span>            if (StringUtils.isNotEmpty(changeSet.getAuthor())) {<a name="line.468"></a>
+<span class="sourceLineNo">469</span>                generator.writeStringField("author", changeSet.getAuthor());<a name="line.469"></a>
+<span class="sourceLineNo">470</span>            }<a name="line.470"></a>
+<span class="sourceLineNo">471</span>            if (StringUtils.isNotEmpty(changeSet.getComment())) {<a name="line.471"></a>
+<span class="sourceLineNo">472</span>                generator.writeStringField("comment", changeSet.getComment());<a name="line.472"></a>
+<span class="sourceLineNo">473</span>            }<a name="line.473"></a>
+<span class="sourceLineNo">474</span>            if (changeSet.getDate() != null) {<a name="line.474"></a>
+<span class="sourceLineNo">475</span>                SimpleDateFormat iso8601format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");<a name="line.475"></a>
+<span class="sourceLineNo">476</span>                iso8601format.setTimeZone(TimeZone.getTimeZone("UTC"));<a name="line.476"></a>
+<span class="sourceLineNo">477</span>                generator.writeStringField("date", iso8601format.format(changeSet.getDate()));<a name="line.477"></a>
+<span class="sourceLineNo">478</span>            }<a name="line.478"></a>
+<span class="sourceLineNo">479</span>            if (changeSet.getParentRevision() != null) {<a name="line.479"></a>
+<span class="sourceLineNo">480</span>                generator.writeStringField("parentRevision", changeSet.getParentRevision());<a name="line.480"></a>
+<span class="sourceLineNo">481</span>            }<a name="line.481"></a>
+<span class="sourceLineNo">482</span>            if (!changeSet.getMergedRevisions().isEmpty()) {<a name="line.482"></a>
+<span class="sourceLineNo">483</span>                generator.writeArrayFieldStart("mergedRevisions");<a name="line.483"></a>
+<span class="sourceLineNo">484</span>                try {<a name="line.484"></a>
+<span class="sourceLineNo">485</span>                    for (String revision : changeSet.getMergedRevisions()) {<a name="line.485"></a>
+<span class="sourceLineNo">486</span>                        generator.writeString(revision);<a name="line.486"></a>
+<span class="sourceLineNo">487</span>                    }<a name="line.487"></a>
+<span class="sourceLineNo">488</span>                } finally {<a name="line.488"></a>
+<span class="sourceLineNo">489</span>                    generator.writeEndArray();<a name="line.489"></a>
+<span class="sourceLineNo">490</span>                }<a name="line.490"></a>
+<span class="sourceLineNo">491</span>            }<a name="line.491"></a>
+<span class="sourceLineNo">492</span>            if (!changeSet.getFiles().isEmpty()) {<a name="line.492"></a>
+<span class="sourceLineNo">493</span>                generator.writeArrayFieldStart("files");<a name="line.493"></a>
+<span class="sourceLineNo">494</span>                try {<a name="line.494"></a>
+<span class="sourceLineNo">495</span>                    for (ChangeFile file : changeSet.getFiles()) {<a name="line.495"></a>
+<span class="sourceLineNo">496</span>                        writeChangeFile(generator, file);<a name="line.496"></a>
+<span class="sourceLineNo">497</span>                    }<a name="line.497"></a>
+<span class="sourceLineNo">498</span>                } finally {<a name="line.498"></a>
+<span class="sourceLineNo">499</span>                    generator.writeEndArray();<a name="line.499"></a>
+<span class="sourceLineNo">500</span>                }<a name="line.500"></a>
+<span class="sourceLineNo">501</span>            }<a name="line.501"></a>
+<span class="sourceLineNo">502</span>        } finally {<a name="line.502"></a>
+<span class="sourceLineNo">503</span>            generator.writeEndObject();<a name="line.503"></a>
+<span class="sourceLineNo">504</span>        }<a name="line.504"></a>
+<span class="sourceLineNo">505</span>    }<a name="line.505"></a>
+<span class="sourceLineNo">506</span><a name="line.506"></a>
+<span class="sourceLineNo">507</span>    private void writeChangeFile(JsonGenerator generator, ChangeFile file) throws IOException {<a name="line.507"></a>
+<span class="sourceLineNo">508</span>        generator.writeStartObject();<a name="line.508"></a>
+<span class="sourceLineNo">509</span>        try {<a name="line.509"></a>
+<span class="sourceLineNo">510</span>            if (file.getAction() != null) {<a name="line.510"></a>
+<span class="sourceLineNo">511</span>                generator.writeStringField("action", file.getAction().toString());<a name="line.511"></a>
+<span class="sourceLineNo">512</span>            }<a name="line.512"></a>
+<span class="sourceLineNo">513</span>            if (file.getName() != null) {<a name="line.513"></a>
+<span class="sourceLineNo">514</span>                generator.writeStringField("name", file.getName());<a name="line.514"></a>
+<span class="sourceLineNo">515</span>            }<a name="line.515"></a>
+<span class="sourceLineNo">516</span>            if (file.getRevision() != null) {<a name="line.516"></a>
+<span class="sourceLineNo">517</span>                generator.writeStringField("revision", file.getRevision());<a name="line.517"></a>
+<span class="sourceLineNo">518</span>            }<a name="line.518"></a>
+<span class="sourceLineNo">519</span>            if (file.getOriginalName() != null) {<a name="line.519"></a>
+<span class="sourceLineNo">520</span>                generator.writeStringField("originalName", file.getOriginalName());<a name="line.520"></a>
+<span class="sourceLineNo">521</span>            }<a name="line.521"></a>
+<span class="sourceLineNo">522</span>            if (file.getOriginalRevision() != null) {<a name="line.522"></a>
+<span class="sourceLineNo">523</span>                generator.writeStringField("originalRevision", file.getOriginalRevision());<a name="line.523"></a>
+<span class="sourceLineNo">524</span>            }<a name="line.524"></a>
+<span class="sourceLineNo">525</span>        } finally {<a name="line.525"></a>
+<span class="sourceLineNo">526</span>            generator.writeEndObject();<a name="line.526"></a>
+<span class="sourceLineNo">527</span>        }<a name="line.527"></a>
+<span class="sourceLineNo">528</span>    }<a name="line.528"></a>
+<span class="sourceLineNo">529</span><a name="line.529"></a>
+<span class="sourceLineNo">530</span>    public ScmRepository getScmRepository()<a name="line.530"></a>
+<span class="sourceLineNo">531</span>            throws ScmException {<a name="line.531"></a>
+<span class="sourceLineNo">532</span>        ScmRepository repository;<a name="line.532"></a>
+<span class="sourceLineNo">533</span><a name="line.533"></a>
+<span class="sourceLineNo">534</span>        try {<a name="line.534"></a>
+<span class="sourceLineNo">535</span>            repository = manager.makeScmRepository(getConnection());<a name="line.535"></a>
+<span class="sourceLineNo">536</span><a name="line.536"></a>
+<span class="sourceLineNo">537</span>            ScmProviderRepository providerRepo = repository.getProviderRepository();<a name="line.537"></a>
+<span class="sourceLineNo">538</span><a name="line.538"></a>
+<span class="sourceLineNo">539</span>            if (!StringUtils.isEmpty(username)) {<a name="line.539"></a>
+<span class="sourceLineNo">540</span>                providerRepo.setUser(username);<a name="line.540"></a>
+<span class="sourceLineNo">541</span>            }<a name="line.541"></a>
+<span class="sourceLineNo">542</span><a name="line.542"></a>
+<span class="sourceLineNo">543</span>            if (!StringUtils.isEmpty(password)) {<a name="line.543"></a>
+<span class="sourceLineNo">544</span>                providerRepo.setPassword(password);<a name="line.544"></a>
+<span class="sourceLineNo">545</span>            }<a name="line.545"></a>
+<span class="sourceLineNo">546</span><a name="line.546"></a>
+<span class="sourceLineNo">547</span>            if (repository.getProviderRepository() instanceof ScmProviderRepositoryWithHost) {<a name="line.547"></a>
+<span class="sourceLineNo">548</span>                ScmProviderRepositoryWithHost repo = (ScmProviderRepositoryWithHost) repository.getProviderRepository();<a name="line.548"></a>
+<span class="sourceLineNo">549</span><a name="line.549"></a>
+<span class="sourceLineNo">550</span>                loadInfosFromSettings(repo);<a name="line.550"></a>
+<span class="sourceLineNo">551</span><a name="line.551"></a>
+<span class="sourceLineNo">552</span>                if (!StringUtils.isEmpty(username)) {<a name="line.552"></a>
+<span class="sourceLineNo">553</span>                    repo.setUser(username);<a name="line.553"></a>
+<span class="sourceLineNo">554</span>                }<a name="line.554"></a>
+<span class="sourceLineNo">555</span><a name="line.555"></a>
+<span class="sourceLineNo">556</span>                if (!StringUtils.isEmpty(password)) {<a name="line.556"></a>
+<span class="sourceLineNo">557</span>                    repo.setPassword(password);<a name="line.557"></a>
+<span class="sourceLineNo">558</span>                }<a name="line.558"></a>
+<span class="sourceLineNo">559</span><a name="line.559"></a>
+<span class="sourceLineNo">560</span>                if (!StringUtils.isEmpty(privateKey)) {<a name="line.560"></a>
+<span class="sourceLineNo">561</span>                    repo.setPrivateKey(privateKey);<a name="line.561"></a>
+<span class="sourceLineNo">562</span>                }<a name="line.562"></a>
+<span class="sourceLineNo">563</span><a name="line.563"></a>
+<span class="sourceLineNo">564</span>                if (!StringUtils.isEmpty(passphrase)) {<a name="line.564"></a>
+<span class="sourceLineNo">565</span>                    repo.setPassphrase(passphrase);<a name="line.565"></a>
+<span class="sourceLineNo">566</span>                }<a name="line.566"></a>
+<span class="sourceLineNo">567</span>            }<a name="line.567"></a>
+<span class="sourceLineNo">568</span><a name="line.568"></a>
+<span class="sourceLineNo">569</span>            if (!StringUtils.isEmpty(tagBase) &amp;&amp; repository.getProvider().equals("svn")) {<a name="line.569"></a>
+<span class="sourceLineNo">570</span>                SvnScmProviderRepository svnRepo = (SvnScmProviderRepository) repository.getProviderRepository();<a name="line.570"></a>
+<span class="sourceLineNo">571</span><a name="line.571"></a>
+<span class="sourceLineNo">572</span>                svnRepo.setTagBase(tagBase);<a name="line.572"></a>
+<span class="sourceLineNo">573</span>            }<a name="line.573"></a>
+<span class="sourceLineNo">574</span>        } catch (Exception e) {<a name="line.574"></a>
+<span class="sourceLineNo">575</span>            throw new ScmException("Can't load the scm provider.", e);<a name="line.575"></a>
+<span class="sourceLineNo">576</span>        }<a name="line.576"></a>
+<span class="sourceLineNo">577</span><a name="line.577"></a>
+<span class="sourceLineNo">578</span>        return repository;<a name="line.578"></a>
+<span class="sourceLineNo">579</span>    }<a name="line.579"></a>
+<span class="sourceLineNo">580</span><a name="line.580"></a>
+<span class="sourceLineNo">581</span>    /**<a name="line.581"></a>
+<span class="sourceLineNo">582</span>     * Load username password from settings if user has not set them in JVM properties<a name="line.582"></a>
+<span class="sourceLineNo">583</span>     *<a name="line.583"></a>
+<span class="sourceLineNo">584</span>     * @param repo<a name="line.584"></a>
+<span class="sourceLineNo">585</span>     */<a name="line.585"></a>
+<span class="sourceLineNo">586</span>    private void loadInfosFromSettings(ScmProviderRepositoryWithHost repo) {<a name="line.586"></a>
+<span class="sourceLineNo">587</span>        if (username == null || password == null) {<a name="line.587"></a>
+<span class="sourceLineNo">588</span>            String host = repo.getHost();<a name="line.588"></a>
+<span class="sourceLineNo">589</span><a name="line.589"></a>
+<span class="sourceLineNo">590</span>            int port = repo.getPort();<a name="line.590"></a>
+<span class="sourceLineNo">591</span><a name="line.591"></a>
+<span class="sourceLineNo">592</span>            if (port &gt; 0) {<a name="line.592"></a>
+<span class="sourceLineNo">593</span>                host += ":" + port;<a name="line.593"></a>
+<span class="sourceLineNo">594</span>            }<a name="line.594"></a>
+<span class="sourceLineNo">595</span><a name="line.595"></a>
+<span class="sourceLineNo">596</span>            Server server = this.settings.getServer(host);<a name="line.596"></a>
+<span class="sourceLineNo">597</span><a name="line.597"></a>
+<span class="sourceLineNo">598</span>            if (server != null) {<a name="line.598"></a>
+<span class="sourceLineNo">599</span>                if (username == null) {<a name="line.599"></a>
+<span class="sourceLineNo">600</span>                    username = this.settings.getServer(host).getUsername();<a name="line.600"></a>
+<span class="sourceLineNo">601</span>                }<a name="line.601"></a>
+<span class="sourceLineNo">602</span><a name="line.602"></a>
+<span class="sourceLineNo">603</span>                if (password == null) {<a name="line.603"></a>
+<span class="sourceLineNo">604</span>                    password = this.settings.getServer(host).getPassword();<a name="line.604"></a>
+<span class="sourceLineNo">605</span>                }<a name="line.605"></a>
+<span class="sourceLineNo">606</span><a name="line.606"></a>
+<span class="sourceLineNo">607</span>                if (privateKey == null) {<a name="line.607"></a>
+<span class="sourceLineNo">608</span>                    privateKey = this.settings.getServer(host).getPrivateKey();<a name="line.608"></a>
+<span class="sourceLineNo">609</span>                }<a name="line.609"></a>
+<span class="sourceLineNo">610</span><a name="line.610"></a>
+<span class="sourceLineNo">611</span>                if (passphrase == null) {<a name="line.611"></a>
+<span class="sourceLineNo">612</span>                    passphrase = this.settings.getServer(host).getPassphrase();<a name="line.612"></a>
+<span class="sourceLineNo">613</span>                }<a name="line.613"></a>
+<span class="sourceLineNo">614</span>            }<a name="line.614"></a>
+<span class="sourceLineNo">615</span>        }<a name="line.615"></a>
+<span class="sourceLineNo">616</span>    }<a name="line.616"></a>
+<span class="sourceLineNo">617</span><a name="line.617"></a>
+<span class="sourceLineNo">618</span>    public void checkResult(ScmResult result)<a name="line.618"></a>
+<span class="sourceLineNo">619</span>            throws MojoExecutionException {<a name="line.619"></a>
+<span class="sourceLineNo">620</span>        if (!result.isSuccess()) {<a name="line.620"></a>
+<span class="sourceLineNo">621</span>            getLog().error("Provider message:");<a name="line.621"></a>
+<span class="sourceLineNo">622</span><a name="line.622"></a>
+<span class="sourceLineNo">623</span>            getLog().error(result.getProviderMessage() == null ? "" : result.getProviderMessage());<a name="line.623"></a>
+<span class="sourceLineNo">624</span><a name="line.624"></a>
+<span class="sourceLineNo">625</span>            getLog().error("Command output:");<a name="line.625"></a>
+<span class="sourceLineNo">626</span><a name="line.626"></a>
+<span class="sourceLineNo">627</span>            getLog().error(result.getCommandOutput() == null ? "" : result.getCommandOutput());<a name="line.627"></a>
+<span class="sourceLineNo">628</span><a name="line.628"></a>
+<span class="sourceLineNo">629</span>            throw new MojoExecutionException("Command failed.");<a name="line.629"></a>
+<span class="sourceLineNo">630</span>        }<a name="line.630"></a>
+<span class="sourceLineNo">631</span>    }<a name="line.631"></a>
+<span class="sourceLineNo">632</span><a name="line.632"></a>
+<span class="sourceLineNo">633</span>    /**<a name="line.633"></a>
+<span class="sourceLineNo">634</span>     * used to retrieve the SCM connection string<a name="line.634"></a>
+<span class="sourceLineNo">635</span>     *<a name="line.635"></a>
+<span class="sourceLineNo">636</span>     * @return the url string used to connect to the SCM<a name="line.636"></a>
+<span class="sourceLineNo">637</span>     * @throws MojoExecutionException when there is insufficient information to retrieve the SCM connection string<a name="line.637"></a>
+<span class="sourceLineNo">638</span>     */<a name="line.638"></a>
+<span class="sourceLineNo">639</span>    protected String getConnection()<a name="line.639"></a>
+<span class="sourceLineNo">640</span>            throws MojoExecutionException {<a name="line.640"></a>
+<span class="sourceLineNo">641</span>        if (this.connection != null) {<a name="line.641"></a>
+<span class="sourceLineNo">642</span>            return connection;<a name="line.642"></a>
+<span class="sourceLineNo">643</span>        }<a name="line.643"></a>
+<span class="sourceLineNo">644</span><a name="line.644"></a>
+<span class="sourceLineNo">645</span>        if (project.getScm() == null) {<a name="line.645"></a>
+<span class="sourceLineNo">646</span>            throw new MojoExecutionException("SCM Connection is not set.");<a name="line.646"></a>
+<span class="sourceLineNo">647</span>        }<a name="line.647"></a>
+<span class="sourceLineNo">648</span><a name="line.648"></a>
+<span class="sourceLineNo">649</span>        String scmConnection = project.getScm().getConnection();<a name="line.649"></a>
+<span class="sourceLineNo">650</span>        if (StringUtils.isNotEmpty(scmConnection) &amp;&amp; "connection".equals(connectionType.toLowerCase())) {<a name="line.650"></a>
+<span class="sourceLineNo">651</span>            connection = scmConnection;<a name="line.651"></a>
+<span class="sourceLineNo">652</span>        }<a name="line.652"></a>
+<span class="sourceLineNo">653</span><a name="line.653"></a>
+<span class="sourceLineNo">654</span>        String scmDeveloper = project.getScm().getDeveloperConnection();<a name="line.654"></a>
+<span class="sourceLineNo">655</span>        if (StringUtils.isNotEmpty(scmDeveloper) &amp;&amp; "developerconnection".equals(connectionType.toLowerCase())) {<a name="line.655"></a>
+<span class="sourceLineNo">656</span>            connection = scmDeveloper;<a name="line.656"></a>
+<span class="sourceLineNo">657</span>        }<a name="line.657"></a>
+<span class="sourceLineNo">658</span><a name="line.658"></a>
+<span class="sourceLineNo">659</span>        if (StringUtils.isEmpty(connection)) {<a name="line.659"></a>
+<span class="sourceLineNo">660</span>            throw new MojoExecutionException("SCM Connection is not set.");<a name="line.660"></a>
+<span class="sourceLineNo">661</span>        }<a name="line.661"></a>
+<span class="sourceLineNo">662</span><a name="line.662"></a>
+<span class="sourceLineNo">663</span>        return connection;<a name="line.663"></a>
+<span class="sourceLineNo">664</span>    }<a name="line.664"></a>
+<span class="sourceLineNo">665</span><a name="line.665"></a>
+<span class="sourceLineNo">666</span>    /**<a name="line.666"></a>
+<span class="sourceLineNo">667</span>     * Determines the relative path from trunk to tag, and adds this relative path<a name="line.667"></a>
+<span class="sourceLineNo">668</span>     * to the url.<a name="line.668"></a>
+<span class="sourceLineNo">669</span>     *<a name="line.669"></a>
+<span class="sourceLineNo">670</span>     * @param trunkPath - The trunk url<a name="line.670"></a>
+<span class="sourceLineNo">671</span>     * @param tagPath   - The tag base<a name="line.671"></a>
+<span class="sourceLineNo">672</span>     * @param urlPath   - scm.url or scm.connection<a name="line.672"></a>
+<span class="sourceLineNo">673</span>     * @return The url path for the tag.<a name="line.673"></a>
+<span class="sourceLineNo">674</span>     */<a name="line.674"></a>
+<span class="sourceLineNo">675</span>    private String translateUrlPath(String trunkPath, String tagPath, String urlPath) {<a name="line.675"></a>
+<span class="sourceLineNo">676</span>        trunkPath = trunkPath.trim();<a name="line.676"></a>
+<span class="sourceLineNo">677</span>        tagPath = tagPath.trim();<a name="line.677"></a>
+<span class="sourceLineNo">678</span>        //Strip the slash at the end if one is present<a name="line.678"></a>
+<span class="sourceLineNo">679</span>        if (trunkPath.endsWith("/")) {<a name="line.679"></a>
+<span class="sourceLineNo">680</span>            trunkPath = trunkPath.substring(0, trunkPath.length() - 1);<a name="line.680"></a>
+<span class="sourceLineNo">681</span>        }<a name="line.681"></a>
+<span class="sourceLineNo">682</span>        if (tagPath.endsWith("/")) {<a name="line.682"></a>
+<span class="sourceLineNo">683</span>            tagPath = tagPath.substring(0, tagPath.length() - 1);<a name="line.683"></a>
+<span class="sourceLineNo">684</span>        }<a name="line.684"></a>
+<span class="sourceLineNo">685</span>        char[] tagPathChars = trunkPath.toCharArray();<a name="line.685"></a>
+<span class="sourceLineNo">686</span>        char[] trunkPathChars = tagPath.toCharArray();<a name="line.686"></a>
+<span class="sourceLineNo">687</span>        // Find the common path between trunk and tags<a name="line.687"></a>
+<span class="sourceLineNo">688</span>        int i = 0;<a name="line.688"></a>
+<span class="sourceLineNo">689</span>        while ((i &lt; tagPathChars.length) &amp;&amp; (i &lt; trunkPathChars.length) &amp;&amp; tagPathChars[i] == trunkPathChars[i]) {<a name="line.689"></a>
+<span class="sourceLineNo">690</span>            ++i;<a name="line.690"></a>
+<span class="sourceLineNo">691</span>        }<a name="line.691"></a>
+<span class="sourceLineNo">692</span>        // If there is nothing common between trunk and tags, or the relative<a name="line.692"></a>
+<span class="sourceLineNo">693</span>        // path does not exist in the url, then just return the tag.<a name="line.693"></a>
+<span class="sourceLineNo">694</span>        if (i == 0 || urlPath.indexOf(trunkPath.substring(i)) &lt; 0) {<a name="line.694"></a>
+<span class="sourceLineNo">695</span>            return tagPath;<a name="line.695"></a>
+<span class="sourceLineNo">696</span>        } else {<a name="line.696"></a>
+<span class="sourceLineNo">697</span>            return StringUtils.replace(urlPath, trunkPath.substring(i), tagPath.substring(i));<a name="line.697"></a>
+<span class="sourceLineNo">698</span>        }<a name="line.698"></a>
+<span class="sourceLineNo">699</span>    }<a name="line.699"></a>
+<span class="sourceLineNo">700</span><a name="line.700"></a>
+<span class="sourceLineNo">701</span>    private static class GroupArtifactId {<a name="line.701"></a>
+<span class="sourceLineNo">702</span>        private final String groupId;<a name="line.702"></a>
+<span class="sourceLineNo">703</span>        private final String artifactId;<a name="line.703"></a>
+<span class="sourceLineNo">704</span><a name="line.704"></a>
+<span class="sourceLineNo">705</span>        public GroupArtifactId(Dependency dependency) {<a name="line.705"></a>
+<span class="sourceLineNo">706</span>            this.groupId = dependency.getGroupId();<a name="line.706"></a>
+<span class="sourceLineNo">707</span>            this.artifactId = dependency.getArtifactId();<a name="line.707"></a>
+<span class="sourceLineNo">708</span>        }<a name="line.708"></a>
+<span class="sourceLineNo">709</span><a name="line.709"></a>
+<span class="sourceLineNo">710</span>        public String getArtifactId() {<a name="line.710"></a>
+<span class="sourceLineNo">711</span>            return artifactId;<a name="line.711"></a>
+<span class="sourceLineNo">712</span>        }<a name="line.712"></a>
+<span class="sourceLineNo">713</span><a name="line.713"></a>
+<span class="sourceLineNo">714</span>        public String getGroupId() {<a name="line.714"></a>
+<span class="sourceLineNo">715</span>            return groupId;<a name="line.715"></a>
+<span class="sourceLineNo">716</span>        }<a name="line.716"></a>
+<span class="sourceLineNo">717</span><a name="line.717"></a>
+<span class="sourceLineNo">718</span>        @Override<a name="line.718"></a>
+<span class="sourceLineNo">719</span>        public boolean equals(Object o) {<a name="line.719"></a>
+<span class="sourceLineNo">720</span>            if (this == o) {<a name="line.720"></a>
+<span class="sourceLineNo">721</span>                return true;<a name="line.721"></a>
+<span class="sourceLineNo">722</span>            }<a name="line.722"></a>
+<span class="sourceLineNo">723</span>            if (o == null || getClass() != o.getClass()) {<a name="line.723"></a>
+<span class="sourceLineNo">724</span>                return false;<a name="line.724"></a>
+<span class="sourceLineNo">725</span>            }<a name="line.725"></a>
+<span class="sourceLineNo">726</span><a name="line.726"></a>
+<span class="sourceLineNo">727</span>            GroupArtifactId that = (GroupArtifactId) o;<a name="line.727"></a>
+<span class="sourceLineNo">728</span><a name="line.728"></a>
+<span class="sourceLineNo">729</span>            if (artifactId != null ? !artifactId.equals(that.artifactId) : that.artifactId != null) {<a name="line.729"></a>
+<span class="sourceLineNo">730</span>                return false;<a name="line.730"></a>
+<span class="sourceLineNo">731</span>            }<a name="line.731"></a>
+<span class="sourceLineNo">732</span>            if (groupId != null ? !groupId.equals(that.groupId) : that.groupId != null) {<a name="line.732"></a>
+<span class="sourceLineNo">733</span>                return false;<a name="line.733"></a>
+<span class="sourceLineNo">734</span>            }<a name="line.734"></a>
+<span class="sourceLineNo">735</span><a name="line.735"></a>
+<span class="sourceLineNo">736</span>            return true;<a name="line.736"></a>
+<span class="sourceLineNo">737</span>        }<a name="line.737"></a>
+<span class="sourceLineNo">738</span><a name="line.738"></a>
+<span class="sourceLineNo">739</span>        @Override<a name="line.739"></a>
+<span class="sourceLineNo">740</span>        public int hashCode() {<a name="line.740"></a>
+<span class="sourceLineNo">741</span>            int result = groupId != null ? groupId.hashCode() : 0;<a name="line.741"></a>
+<span class="sourceLineNo">742</span>            result = 31 * result + (artifactId != null ? artifactId.hashCode() : 0);<a name="line.742"></a>
+<span class="sourceLineNo">743</span>            return result;<a name="line.743"></a>
+<span class="sourceLineNo">744</span>        }<a name="line.744"></a>
+<span class="sourceLineNo">745</span><a name="line.745"></a>
+<span class="sourceLineNo">746</span>        @Override<a name="line.746"></a>
+<span class="sourceLineNo">747</span>        public String toString() {<a name="line.747"></a>
+<span class="sourceLineNo">748</span>            return getGroupId() + ":" + getArtifactId();<a name="line.748"></a>
+<span class="sourceLineNo">749</span>        }<a name="line.749"></a>
+<span class="sourceLineNo">750</span>    }<a name="line.750"></a>
+<span class="sourceLineNo">751</span><a name="line.751"></a>
+<span class="sourceLineNo">752</span>}<a name="line.752"></a>
 
 
 
@@ -791,6 +818,7 @@
 
 
 
-</PRE>
-</BODY>
-</HTML>
+</pre>
+</div>
+</body>
+</html>

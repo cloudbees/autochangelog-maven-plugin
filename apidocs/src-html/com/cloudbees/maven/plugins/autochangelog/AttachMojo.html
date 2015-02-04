@@ -494,7 +494,7 @@
 <span class="sourceLineNo">486</span>        String tagNameFormat = "@{project.artifactId}-@{project.version}";<a name="line.486"></a>
 <span class="sourceLineNo">487</span>        if (releasePlugin != null) {<a name="line.487"></a>
 <span class="sourceLineNo">488</span>            Xpp3Dom dom = (Xpp3Dom) releasePlugin.getConfiguration();<a name="line.488"></a>
-<span class="sourceLineNo">489</span>            Xpp3Dom tagNameFormatDom = dom.getChild("tagNameFormat");<a name="line.489"></a>
+<span class="sourceLineNo">489</span>            Xpp3Dom tagNameFormatDom = dom == null ? null : dom.getChild("tagNameFormat");<a name="line.489"></a>
 <span class="sourceLineNo">490</span>            if (tagNameFormatDom != null) {<a name="line.490"></a>
 <span class="sourceLineNo">491</span>                tagNameFormat = tagNameFormatDom.getValue();<a name="line.491"></a>
 <span class="sourceLineNo">492</span>            }<a name="line.492"></a>

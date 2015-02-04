@@ -174,6 +174,10 @@ public class AttachMojo extends AbstractMojo {
     private String connection = null;
 
     public void execute() throws MojoExecutionException, MojoFailureException {
+        if (project != session.getTopLevelProject()) {
+            getLog().info("Skipping execution as only runs on top level project");
+            return;
+        }
         if (skip) {
             getLog().info("Execution is skipped.");
             return;
@@ -320,6 +324,7 @@ public class AttachMojo extends AbstractMojo {
                         e);
             }
         }
+
         getLog().info("Start tag = " + startTag);
         getLog().info("End tag = " + endTag);
 

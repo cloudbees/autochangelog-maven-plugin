@@ -486,7 +486,7 @@ public class AttachMojo extends AbstractMojo {
         String tagNameFormat = "@{project.artifactId}-@{project.version}";
         if (releasePlugin != null) {
             Xpp3Dom dom = (Xpp3Dom) releasePlugin.getConfiguration();
-            Xpp3Dom tagNameFormatDom = dom.getChild("tagNameFormat");
+            Xpp3Dom tagNameFormatDom = dom == null ? null : dom.getChild("tagNameFormat");
             if (tagNameFormatDom != null) {
                 tagNameFormat = tagNameFormatDom.getValue();
             }

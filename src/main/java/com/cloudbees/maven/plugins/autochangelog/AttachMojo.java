@@ -38,6 +38,7 @@ import org.apache.maven.scm.ScmFileSet;
 import org.apache.maven.scm.ScmResult;
 import org.apache.maven.scm.ScmTag;
 import org.apache.maven.scm.ScmVersion;
+import org.apache.maven.scm.command.changelog.ChangeLogScmRequest;
 import org.apache.maven.scm.command.changelog.ChangeLogScmResult;
 import org.apache.maven.scm.command.changelog.ChangeLogSet;
 import org.apache.maven.scm.manager.NoSuchScmProviderException;
@@ -60,6 +61,8 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.AbstractMap;
 import java.util.LinkedHashMap;
@@ -176,29 +179,30 @@ public class AttachMojo extends AbstractMojo {
             return;
         }
         if (previousVersion == null) {
-        getLog().debug("Looking for previous release of " + project.getGroupId() + ":" + project.getArtifactId() + ":"
-                + project.getVersion());
-        Artifact projectArtifact = artifactFactory
-                .createProjectArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion());
-        ArtifactVersion projectVersion = new DefaultArtifactVersion(project.getVersion());
+            getLog().debug(
+                    "Looking for previous release of " + project.getGroupId() + ":" + project.getArtifactId() + ":"
+                            + project.getVersion());
+            Artifact projectArtifact = artifactFactory
+                    .createProjectArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion());
+            ArtifactVersion projectVersion = new DefaultArtifactVersion(project.getVersion());
 
-        ArtifactVersion latest = null;
-        try {
-            List<ArtifactVersion> artifactVersions = artifactMetadataSource
-                    .retrieveAvailableVersions(projectArtifact, localRepository,
-                            project.getRemoteArtifactRepositories());
-            for (ArtifactVersion version : artifactVersions) {
-                if (SNAPSHOT_PATTERN.matcher(version.toString()).find() || projectVersion.compareTo(version) <= 0) {
-                    continue;
+            ArtifactVersion latest = null;
+            try {
+                List<ArtifactVersion> artifactVersions = artifactMetadataSource
+                        .retrieveAvailableVersions(projectArtifact, localRepository,
+                                project.getRemoteArtifactRepositories());
+                for (ArtifactVersion version : artifactVersions) {
+                    if (SNAPSHOT_PATTERN.matcher(version.toString()).find() || projectVersion.compareTo(version) <= 0) {
+                        continue;
+                    }
+                    if (latest == null || latest.compareTo(version) < 0) {
+                        latest = version;
+                    }
                 }
-                if (latest == null || latest.compareTo(version) < 0) {
-                    latest = version;
-                }
+            } catch (ArtifactMetadataRetrievalException e) {
+                throw new MojoExecutionException(e.getMessage(), e);
             }
-        } catch (ArtifactMetadataRetrievalException e) {
-            throw new MojoExecutionException(e.getMessage(), e);
-        }
-        getLog().debug("Previous release = " + latest);
+            getLog().debug("Previous release = " + latest);
             previousVersion = latest == null ? null : latest.toString();
         }
 
@@ -236,7 +240,18 @@ public class AttachMojo extends AbstractMojo {
             request.setUserProperties(session.getUserProperties());
             request.setRemoteRepositories(session.getRequest().getRemoteRepositories());
             request.setPluginArtifactRepositories(session.getRequest().getPluginArtifactRepositories());
-            request.setRepositorySession(session.getRepositorySession());
+            try {
+                Method getRepositorySession = session.getClass().getMethod("getRepositorySession");
+                Method setRepositorySession =
+                        request.getClass().getMethod("setRepositorySession", getRepositorySession.getReturnType());
+                setRepositorySession.invoke(request, getRepositorySession.invoke(session));
+            } catch (NoSuchMethodException e) {
+                getLog().debug(e);
+            } catch (IllegalAccessException e) {
+                getLog().debug(e);
+            } catch (InvocationTargetException e) {
+                getLog().debug(e);
+            }
             request.setLocalRepository(localRepository);
             request.setBuildStartTime(session.getRequest().getStartTime());
             request.setResolveDependencies(true);
@@ -313,30 +328,58 @@ public class AttachMojo extends AbstractMojo {
         ScmRepository repository;
         try {
             repository = getScmRepository();
-            ScmProvider provider = null;
-            try {
-                provider = manager.getProviderByRepository(repository);
-            } catch (NoSuchScmProviderException e) {
-                throw new MojoExecutionException("Unknown/unsupported SCM provider", e);
-            }
-
-            ScmVersion scmStartVersion;
-            ScmVersion scmEndVersion;
-            if (repository.getProvider().equals("svn")) {
-                getLog().warn("SVN does not support the required changelog operations");
+            if (repository == null) {
+                getLog().warn("No SCM connection details, cannot capture source control changes");
             } else {
-                scmStartVersion = startTag == null ? null : new ScmTag(startTag);
-                scmEndVersion = endTag == null ? null : new ScmTag(endTag);
-                ChangeLogScmResult changeLogScmResult;
+                ScmProvider provider = null;
                 try {
-                    changeLogScmResult =
-                            provider.changeLog(repository, new ScmFileSet(basedir), scmStartVersion, scmEndVersion);
-                } catch (ScmException e) {
-                    throw new MojoExecutionException("Could not fetch changelog", e);
+                    provider = manager.getProviderByRepository(repository);
+                } catch (NoSuchScmProviderException e) {
+                    throw new MojoExecutionException("Unknown/unsupported SCM provider", e);
                 }
-                checkResult(changeLogScmResult);
 
-                changeLog = changeLogScmResult.getChangeLog();
+                if (repository.getProvider().equals("svn")) {
+                    getLog().warn("SVN does not support the required changelog operations");
+                } else {
+                    ChangeLogScmRequest changeLogScmRequest =
+                            new ChangeLogScmRequest(repository, new ScmFileSet(basedir));
+                    if (startTag != null) {
+                        changeLogScmRequest.setStartRevision(new ScmTag(startTag));
+                    }
+                    if (endTag != null) {
+                        changeLogScmRequest.setEndRevision(new ScmTag(endTag));
+                    }
+                    ChangeLogScmResult changeLogScmResult;
+                    try {
+                        changeLogScmResult = provider.changeLog(changeLogScmRequest);
+                    } catch (ScmException e) {
+                        // this may just be the end-tag not created yet
+                        if (endTag != null) {
+                            changeLogScmRequest.setStartRevision(new ScmTag(endTag));
+                            try {
+                                provider.changeLog(changeLogScmRequest);
+                                // ok the end tag exists, so this looks like a genuine problem
+                                throw new MojoExecutionException("Could not fetch changelog", e);
+                            } catch (ScmException expected) {
+                                if (startTag != null) {
+                                    changeLogScmRequest.setStartRevision(new ScmTag(startTag));
+                                }
+                                changeLogScmRequest.setEndRevision(null);
+                                try {
+                                    changeLogScmResult = provider.changeLog(changeLogScmRequest);
+                                } catch (ScmException issue) {
+                                    throw new MojoExecutionException("Could not fetch changelog", e);
+                                }
+                            }
+
+                        } else {
+                            throw new MojoExecutionException("Could not fetch changelog", e);
+                        }
+                    }
+                    checkResult(changeLogScmResult);
+
+                    changeLog = changeLogScmResult.getChangeLog();
+                }
             }
         } catch (ScmException e) {
             getLog().error("Could not get SCM repository", e);
@@ -533,6 +576,10 @@ public class AttachMojo extends AbstractMojo {
 
         try {
             repository = manager.makeScmRepository(getConnection());
+        } catch (MojoExecutionException e) {
+            return null;
+        }
+        try {
 
             ScmProviderRepository providerRepo = repository.getProviderRepository();
 
@@ -638,7 +685,7 @@ public class AttachMojo extends AbstractMojo {
      */
     protected String getConnection()
             throws MojoExecutionException {
-        if (this.connection != null) {
+        if (StringUtils.isNotBlank(this.connection)) {
             return connection;
         }
 

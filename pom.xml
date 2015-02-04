@@ -21,7 +21,7 @@
   <parent>
     <groupId>com.cloudbees</groupId>
     <artifactId>cloudbees-oss-parent</artifactId>
-    <version>3</version>
+    <version>6</version>
   </parent>
 
   <groupId>com.cloudbees.maven.plugins</groupId>
@@ -54,7 +54,7 @@
   </distributionManagement>
 
   <properties>
-    <mavenScmVersion>1.7</mavenScmVersion>
+    <mavenScmVersion>1.9.2</mavenScmVersion>
     <mavenVersion>3.0.2</mavenVersion>
   </properties>
 

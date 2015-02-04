@@ -26,7 +26,7 @@
 
   <groupId>com.cloudbees.maven.plugins</groupId>
   <artifactId>autochangelog-maven-plugin</artifactId>
-  <version>1.0-alpha-6</version>
+  <version>1.0-alpha-7-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
 
   <name>Automatic Changelog Maven Plugin</name>
@@ -40,7 +40,7 @@
     <connection>scm:git:git://github.com/cloudbees/autochangelog-maven-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:cloudbees/autochangelog-maven-plugin.git</developerConnection>
     <url>http://github.com/cloudbees/autochangelog-maven-plugin/tree/master/</url>
-    <tag>autochangelog-maven-plugin-1.0-alpha-6</tag>
+    <tag>HEAD</tag>
   </scm>
   <issueManagement>
     <system>github</system>

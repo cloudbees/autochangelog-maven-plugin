@@ -353,27 +353,30 @@ public class AttachMojo extends AbstractMojo {
                     try {
                         changeLogScmResult = provider.changeLog(changeLogScmRequest);
                     } catch (ScmException e) {
+                        throw new MojoExecutionException("Could not fetch changelog", e);
+                    }
+                    if (!changeLogScmResult.isSuccess() && endTag != null) {
                         // this may just be the end-tag not created yet
-                        if (endTag != null) {
-                            changeLogScmRequest.setStartRevision(new ScmTag(endTag));
-                            try {
-                                provider.changeLog(changeLogScmRequest);
-                                // ok the end tag exists, so this looks like a genuine problem
-                                throw new MojoExecutionException("Could not fetch changelog", e);
-                            } catch (ScmException expected) {
-                                if (startTag != null) {
-                                    changeLogScmRequest.setStartRevision(new ScmTag(startTag));
-                                }
-                                changeLogScmRequest.setEndRevision(null);
-                                try {
-                                    changeLogScmResult = provider.changeLog(changeLogScmRequest);
-                                } catch (ScmException issue) {
-                                    throw new MojoExecutionException("Could not fetch changelog", e);
-                                }
-                            }
-
-                        } else {
+                        changeLogScmRequest = new ChangeLogScmRequest(repository, new ScmFileSet(basedir));
+                        changeLogScmRequest.setStartRevision(new ScmTag(endTag));
+                        changeLogScmRequest.setEndRevision(new ScmTag(endTag));
+                        ChangeLogScmResult probe;
+                        try {
+                            probe = provider.changeLog(changeLogScmRequest);
+                        } catch (ScmException e) {
                             throw new MojoExecutionException("Could not fetch changelog", e);
+                        }
+                        if (!probe.isSuccess()) {
+                            // the end tag does not exist, use HEAD instead
+                            changeLogScmRequest = new ChangeLogScmRequest(repository, new ScmFileSet(basedir));
+                            if (startTag != null) {
+                                changeLogScmRequest.setStartRevision(new ScmTag(startTag));
+                            }
+                            try {
+                                changeLogScmResult = provider.changeLog(changeLogScmRequest);
+                            } catch (ScmException e) {
+                                throw new MojoExecutionException("Could not fetch changelog", e);
+                            }
                         }
                     }
                     checkResult(changeLogScmResult);

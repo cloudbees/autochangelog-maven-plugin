@@ -65,10 +65,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.AbstractMap;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
 
@@ -153,6 +157,19 @@ public class AttachMojo extends AbstractMojo {
     @Parameter(property = "autochangelog.previousVersion", required = false)
     private String previousVersion;
 
+    /**
+     * If true and the version is not a test version, then the previous version will be determined by
+     * looking for the previous non-test version
+     */
+    @Parameter(property = "autochangelog.aggregateTestVersions", required = false, defaultValue = "true")
+    private boolean aggregateTestVersions;
+
+    /**
+     * A comma separated list of case insensitive strings that identify test versions
+     */
+    @Parameter(property = "autochangelog.testVersions", required = false, defaultValue = "alpha,beta,rc")
+    private String testVersions;
+
     @Component
     private ArtifactMetadataSource artifactMetadataSource;
 
@@ -183,6 +200,20 @@ public class AttachMojo extends AbstractMojo {
             return;
         }
         if (previousVersion == null) {
+            Set<String> testVersions = new HashSet<String>();
+            for (String testVersion : StringUtils.split(StringUtils.defaultString(this.testVersions).toLowerCase(Locale.ENGLISH),",")) {
+                if (StringUtils.isNotBlank(testVersion)) {
+                    testVersions.add(testVersion.trim());
+                }
+            }
+            boolean currentTestVersion = false;
+            for (String testVersion: testVersions) {
+                if (project.getVersion().toLowerCase(Locale.ENGLISH).contains(testVersion)) {
+                    getLog().debug("Current version is a test version");
+                    currentTestVersion = true;
+                    break;
+                }
+            }
             getLog().debug(
                     "Looking for previous release of " + project.getGroupId() + ":" + project.getArtifactId() + ":"
                             + project.getVersion());
@@ -198,6 +229,19 @@ public class AttachMojo extends AbstractMojo {
                 for (ArtifactVersion version : artifactVersions) {
                     if (SNAPSHOT_PATTERN.matcher(version.toString()).find() || projectVersion.compareTo(version) <= 0) {
                         continue;
+                    }
+                    if (aggregateTestVersions && !currentTestVersion) {
+                        boolean previousTestVersion = false;
+                        for (String testVersion: testVersions) {
+                            if (version.toString().toLowerCase(Locale.ENGLISH).contains(testVersion)) {
+                                previousTestVersion = true;
+                                break;
+                            }
+                        }
+                        if (previousTestVersion) {
+                            getLog().debug("Ignoring " + version + " as it is a test version");
+                            continue;
+                        }
                     }
                     if (latest == null || latest.compareTo(version) < 0) {
                         latest = version;
